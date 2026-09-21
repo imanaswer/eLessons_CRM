@@ -6,4 +6,8 @@ The suite connects as `elessons_app`, not the owner, and its first test asserts 
 
 Mutation check performed once by hand: replacing `app.can_see` with `select true` makes 7 tests fail.
 
-Not covered yet: browser-level UI tests, server-action input fuzzing, load tests. Every later phase adds its tables to the isolation suite (lead export/search/direct-API cases from PRD s50 land with `leads` in Phase 1).
+`tests/leads.test.ts` (Phase 1, 36 tests): the PRD s50 critical test on real leads (GET, SEARCH, FILTER, UPDATE, DELETE, EXPORT, every write function, forged scope hints; then HQ succeeds), the gate (normalisation, idempotency, 5-way concurrent race, DNC, conflicts under both policies), counsellor own/all, privacy toggles, the disposition engine, projection rebuild, retry → dead-letter → replay with a simulated outage, crashed-worker reclaim, HQ pool, assignment, transfers and custody, bulk import report, erasure, CSV parsing.
+
+Mutation checks performed by hand (repeat after touching a scope rule): `app.can_see` → `select true` fails 7 tests; removing the role predicates from `lead_list` fails 6.
+
+Not automated: browser/UI tests, 360 px layout, XLSX through the upload action (the reader call was verified once against a hand-built workbook), load tests (one manual run recorded in PHASE-1.md).

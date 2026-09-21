@@ -7,7 +7,8 @@ Not deployed anywhere yet. This is the intended procedure; none of it has been e
 3. `MIGRATE_DATABASE_URL=<postgres role, direct connection> pnpm db:migrate`. Do **not** run `db:seed` (it refuses non-dev names anyway). Create the org and first Superadmin with a one-off SQL script.
 4. App env: `DATABASE_URL` = `elessons_app` credentials via the **session-mode** pooler or direct connection. Transaction-mode pooling is also safe because role and claims are `SET LOCAL` inside one transaction.
 5. Run `pnpm test` in CI against a scratch database before every deploy.
-6. Host the Next.js app on any Node runtime (Vercel works). The Phase 1 worker needs a long-running process.
+6. Host the Next.js app on any Node runtime. Run `pnpm worker` as a long-running process (not serverless) with `WORKER_DATABASE_URL`; several instances may run side by side.
+7. Exports are written to `EXPORT_DIR` on local disk, so **today the web app and the worker must share a filesystem**. Moving this to object storage is required before hosting them separately.
 
 ## Backups
 **Nothing is configured and nothing has been verified.** Target: Supabase daily backups + PITR, RPO ≤ 5 min, RTO ≤ 4 h, quarterly restore drill recorded here with date and result.

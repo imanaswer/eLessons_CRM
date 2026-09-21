@@ -58,10 +58,10 @@ export async function processExport(pool: pg.Pool): Promise<boolean> {
     await db.query("select set_config('request.jwt.claims', $1, true)", [JSON.stringify(c.claims)])
     const { rows: [p] } = await db.query("select app.has_perm('leads.export') as ok")
     if (!p.ok) throw new Error('EXPORT_DENIED: permission was revoked')
-    out.write(EXPORT_COLUMNS.map((x) => x.header).join(',') + '\n')
+    out.write('\uFEFF' + EXPORT_COLUMNS.map((x) => x.header).join(',') + '\n')   // BOM: Excel reads UTF-8 correctly
     let cursor: string | undefined
     for (;;) {   // keyset pages: constant memory at any size
-      const q = buildLeadQuery({ ...job.filters, cursor }, 1000)
+      const q = buildLeadQuery({ ...job.filters, cursor }, 1000, c.claims)
       const page = (await db.query(q.sql, q.params)).rows
       for (const r of page) {
         if (job.mask_phone) r.primary_phone = r.primary_phone && String(r.primary_phone).replace(/^(.{3}).*(.{4})$/, (_, a, b) => a + '•'.repeat(6) + b)

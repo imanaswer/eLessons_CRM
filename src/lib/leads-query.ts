@@ -31,17 +31,20 @@ export const leadFilterSchema = z.object({
 })
 export type LeadFilters = z.infer<typeof leadFilterSchema>
 
-export function buildLeadQuery(input: unknown, limit: number): { sql: string; params: unknown[] } {
+export type Scope = { role: string; centre_id: string | null; district_id: string | null; user_id: string }
+
+// `scope` is a PERFORMANCE HINT, never the security boundary: lead_list already restricts rows from the
+// session claims. Repeating the caller's own centre/district as a constant lets Postgres walk the
+// (centre, created_at) index in order instead of sorting; passing someone else's scope just returns nothing.
+export function buildLeadQuery(input: unknown, limit: number, scope?: Scope): { sql: string; params: unknown[] } {
   const f = leadFilterSchema.parse(input ?? {})
   const params: unknown[] = []
   const p = (v: unknown) => `$${params.push(v)}`
   const where = [SMART_VIEWS[f.view].where, 'v.anonymised_at is null']
-  if (f.q) {
-    const digits = f.q.replace(/\D/g, '')
-    where.push(digits.length >= 4 && digits.length === f.q.replace(/[\s+()-]/g, '').length
-      ? `v.id in (select app.search_lead_ids_by_phone(${p(digits)}))`
-      : `v.name ilike ${p('%' + f.q.replace(/[%_\\]/g, '\\$&') + '%')}`)
-  }
+  if (scope?.centre_id) where.push(`v.current_centre_id = ${p(scope.centre_id)}`)
+  else if (scope?.district_id) where.push(`v.district_id = ${p(scope.district_id)}`)
+  // name (3+ chars) or phone digits; resolved to ids by app.search_lead_ids so the trigram indexes are used
+  if (f.q) where.push(`v.id = any ((select app.search_lead_ids(${p(f.q)}))::uuid[])`)
   if (f.owner) where.push(`v.owner_user_id = ${p(f.owner)}`)
   if (f.centre) where.push(`v.current_centre_id = ${p(f.centre)}`)
   if (f.district) where.push(`v.district_id = ${p(f.district)}`)

@@ -9,6 +9,22 @@ Priority order: security > data integrity > business correctness > UX.
 - `elessons_worker` (BYPASSRLS) is the single exempt principal; its credentials must never be given to the web app.
 - **Deploy check:** `select rolsuper, rolbypassrls from pg_roles where rolname = 'elessons_app'` must be `f, f`. The test suite asserts this first.
 
+## Threat model (read before changing `lead_list`)
+The tenant DB role's identity is a transaction-local setting (`request.jwt.claims`) written by the app server, the same model PostgREST and Supabase use. Consequences:
+- The isolation guarantee is: **no code path can return another centre's rows, whatever the user sends.** Users never send SQL; every filter is whitelisted by zod and bound as a parameter (`src/lib/leads-query.ts`).
+- It is **not** a defence against SQL injection: injected SQL running as `authenticated` could set HQ claims. So injection must stay impossible: no string-built SQL from input, ever. `grep -n '\${' src/lib/leads-query.ts` should only show parameter placeholders and whitelisted constants.
+- That is why `lead_list` carries no `security_barrier`: the barrier guards against hostile SQL the role could already escalate with, and it cost a 600x slowdown.
+- `elessons_worker` bypasses RLS. It accepts raw payloads but never executes them, and drops to the requester's scope for exports.
+
+## Leads (Phase 1)
+- No app role can SELECT, INSERT, UPDATE or DELETE `leads`, `lead_phones` or `parent_identities`. Tested with HQ Admin claims, the most privileged tenant identity.
+- Write functions answer `LEAD_NOT_FOUND` for leads outside the caller's scope, so existence is never confirmed.
+- Cross-centre conflicts and the custody chain (`transfers`) are invisible to centres. The "transferred in" activity deliberately omits where the lead came from.
+- Raw inbound payloads are readable by admins of the owning scope only, never by counsellors.
+- Phone search by digits is refused for users who only see masked phones (no digit-by-digit probing).
+- Exports: permission checked at request **and** at run time; file served only to the requester; CSV cells are neutralised against formula injection.
+- Erasure limits, stated plainly: activity rows are immutable, so free-text notes written before erasure remain in the log attached to a nameless, phoneless lead. If legal review requires note redaction, that needs a designed exception to append-only.
+
 ## Authentication
 - Centre code + username + password; HQ without code. Same error for wrong code/username/password; dummy hash burned for unknown users (timing).
 - scrypt N=32768 with per-password salt and stored parameters. Minimum 10 chars. Temporary passwords force a change prompt.
@@ -30,6 +46,7 @@ Role scope (`app.can_see`) × permission (`app.has_perm`). Centre Admins can cre
 | Per-IP login rate limiting | s5 | per-account lockout exists; add at the edge/WAF |
 | Device/session list UI | s14 | data is in `sessions` |
 | Token encryption (`ENCRYPTION_KEY`) | s13 | arrives with `connections` in Phase 3 |
-| Privacy toggles (phone masking etc.) | TEN-8 | permission keys seeded; enforced when `leads` exists |
+| Block bulk select-all | TEN-8 | hides the select-all checkbox only; bulk functions still accept many ids |
+| Webhook signature validation | s5 | no public webhook endpoint exists yet (Phase 3) |
 | DPDP / UAE legal review, consent, erasure | s14 | launch blocker, not an engineering task alone |
 | Backups, PITR, restore test | s46 | nothing configured or verified |

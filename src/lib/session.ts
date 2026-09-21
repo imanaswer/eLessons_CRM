@@ -38,3 +38,9 @@ export async function tenant<T>(fn: (db: pg.PoolClient, claims: Claims) => Promi
 // UI-only hint for hiding nav. Authorization itself is enforced in Postgres.
 export const can = (db: pg.PoolClient, key: string) =>
   db.query<{ ok: boolean }>('select app.has_perm($1) as ok', [key]).then((r) => r.rows[0]!.ok)
+
+// Several permissions in one round trip (a pg connection runs one query at a time).
+export async function perms<K extends string>(db: pg.PoolClient, keys: readonly K[]): Promise<Record<K, boolean>> {
+  const { rows } = await db.query<{ k: K; ok: boolean }>('select k, app.has_perm(k) as ok from unnest($1::text[]) k', [keys])
+  return Object.fromEntries(rows.map((r) => [r.k, r.ok])) as Record<K, boolean>
+}

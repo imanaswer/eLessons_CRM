@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
-import { can, requireClaims, tenant } from '@/lib/session.ts'
+import { perms, requireClaims, tenant } from '@/lib/session.ts'
 import { impersonateAction, logoutAction } from './actions.ts'
 
 const ROLE_LABEL: Record<string, string> = {
@@ -11,7 +11,8 @@ const ROLE_LABEL: Record<string, string> = {
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const claims = await requireClaims()
   const { scope, nav } = await tenant(async (db) => {
-    const [users, centres, audit] = await Promise.all([can(db, 'users.manage'), can(db, 'centres.manage'), can(db, 'audit.view')])
+    const p = await perms(db, ['users.manage', 'centres.manage', 'audit.view', 'leads.export', 'conflicts.resolve', 'inbound.replay', 'dnc.manage'] as const)
+    const users = p['users.manage'], centres = p['centres.manage'], audit = p['audit.view'], exp = p['leads.export'], conflicts = p['conflicts.resolve'], replay = p['inbound.replay'], dnc = p['dnc.manage']
     const { rows } = await db.query<{ label: string }>(
       `select coalesce((select code || ' · ' || name from centres where id = app.centre_id()),
                        (select code || ' · ' || name from districts where id = app.district_id()),
@@ -20,6 +21,11 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       scope: rows[0]?.label ?? '',
       nav: [
         { href: '/', label: 'Dashboard', show: true },
+        { href: '/leads', label: 'Leads', show: true },
+        { href: '/exports', label: 'Exports', show: exp },
+        { href: '/admin/conflicts', label: 'Conflicts', show: conflicts },
+        { href: '/admin/inbound', label: 'Inbound events', show: replay },
+        { href: '/admin/dnc', label: 'Do Not Contact', show: dnc },
         { href: '/admin/districts', label: 'Districts', show: centres },
         { href: '/admin/centres', label: 'Centres', show: centres || claims.role === 'DISTRICT_MANAGER' },
         { href: '/admin/users', label: 'Users', show: users },

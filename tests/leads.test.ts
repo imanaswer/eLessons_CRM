@@ -11,7 +11,7 @@ import { addLead, as, denied, disposition, ensureSeed, one, owner, workerPool } 
 let A: Claims, A1: Claims, A2: Claims, B: Claims, HQ: Claims, DM: Claims
 let centreA: string, centreB: string, centreA2: string, orgId: string
 let leadA: string
-const list = (c: Claims, filters: object) => withTenant(c, async (db) => { const q = buildLeadQuery(filters, 50); return (await db.query(q.sql, q.params)).rows })
+const list = (c: Claims, filters: object, scope: object = c) => withTenant(c, async (db) => { const q = buildLeadQuery(filters, 50, scope as Claims); return (await db.query(q.sql, q.params)).rows })
 const hostileEvent = (payload: object, centre: string | null, key: string, channel = 'website') =>
   workerPool.query('select app.receive_event($1,$2,$3,$4,null,null,$5,$6) as id', [channel, centre, key, JSON.stringify(payload), 'pending', orgId]).then((r) => r.rows[0].id as string)
 
@@ -118,8 +118,10 @@ describe('PRD s50 CRITICAL: Centre B against Lead A', () => {
       for (const t of ['students', 'activities', 'tasks', 'consents', 'list_members'])
         assert.equal((await db.query(`select 1 from ${t} where lead_id = $1`, [leadA])).rowCount, 0, t)
       assert.equal((await db.query("select 1 from inbound_events where centre_id = $1", [centreA])).rowCount, 0)
-      assert.equal((await db.query("select * from app.search_lead_ids_by_phone('9847012345')")).rows.every((r) => r.search_lead_ids_by_phone !== leadA), true)
+      for (const q of ['9847012345', 'Asha Menon']) assert.deepEqual((await db.query('select app.search_lead_ids($1) as ids', [q])).rows[0].ids.filter((x: string) => x === leadA), [])
     })
+    // the scope argument is only an index hint: forging Centre A's scope (or none) must still return nothing of A's
+    for (const forged of [A, HQ, {}]) assert.equal((await list(B, {}, forged)).some((r) => r.current_centre_code === 'EKM-07' || r.centre_code === 'EKM-07'), false)
     for (const f of [{ q: 'Asha Menon' }, { q: '9847012345' }, { centre: centreA }, { owner: A1.user_id }, { ids: [leadA] }, { view: 'enquiry' }])
       assert.equal((await list(B, f)).some((r) => r.id === leadA), false, JSON.stringify(f))
   })
@@ -133,7 +135,7 @@ describe('PRD s50 CRITICAL: Centre B against Lead A', () => {
       ['select app.assign_leads($1, $2)', [[leadA], B.user_id]], ['select app.anonymise_lead($1, $2)', [leadA, 'spite']],
       ['select app.rebuild_projection($1)', [leadA]],
       ['select app.complete_task((select id from tasks where lead_id = $1 limit 1))', [leadA]],
-    ] as const) await denied(withTenant(B, (db) => db.query(sql, p as unknown[])), /LEAD_NOT_FOUND|PERMISSION_DENIED/)
+    ] as const) await denied(withTenant(B, (db) => db.query(sql, [...p] as unknown[])), /LEAD_NOT_FOUND|PERMISSION_DENIED/)
     await denied(withTenant(B, (db) => db.query('select app.transfer_leads($1, $2, $3)', [[leadA], centreB, 'mine now'])))
     assert.equal((await withTenant(B, (db) => db.query('select app.add_to_list($1, (select id from lists limit 1))', [[leadA]])).catch(() => ({ rows: [{ add_to_list: 0 }] }))).rows[0].add_to_list, 0)
     assert.deepEqual((await one('select row_to_json(l) j from leads l where id = $1', [leadA])).j, before.j)
@@ -345,5 +347,22 @@ describe('bulk import (LT-6, LS-3) and erasure', () => {
     assert.equal((await one('select name from students where lead_id = $1', [lead_id])).name, '[erased]')
     assert.equal((await one("select count(*)::int n from audit_log where action = 'lead.erased' and target_id = $1", [lead_id])).n, 1)
     assert.equal((await addLead(A, { phone: '9847000030', name: 'New enquiry' })).outcome, 'created')
+  })
+})
+
+describe('repeat enquiry from the action menu, CSV parsing', () => {
+  test('a closed lead is reopened through the gate, even by a user who only sees a masked phone', async () => {
+    const { lead_id } = await addLead(A1, { phone: '9847000040', name: 'Comes Back' })
+    await withTenant(A1, async (db) => db.query('select app.apply_disposition($1,$2,$3)', [lead_id, await disposition('Wrong number'), null]))
+    await owner.query("update role_permissions set allowed = false where role = 'COUNSELLOR' and permission_key = 'leads.view_phone'")
+    const { rows: [r] } = await withTenant(A1, (db) => db.query('select app.repeat_enquiry($1) as r', [lead_id]))
+    await owner.query("update role_permissions set allowed = true where role = 'COUNSELLOR' and permission_key = 'leads.view_phone'")
+    assert.deepEqual([r.r.outcome, r.r.lead_id], ['rechurned', lead_id])
+    assert.equal((await one('select lifecycle from leads where id = $1', [lead_id])).lifecycle, 'ENQUIRY')
+    await denied(withTenant(B, (db) => db.query('select app.repeat_enquiry($1)', [lead_id])))
+  })
+  test('CSV: quotes, embedded commas and newlines, CRLF, BOM', async () => {
+    const { parseCsv } = await import('../src/lib/csv.ts')
+    assert.deepEqual(parseCsv('﻿Name,Phone\r\n"Menon, Asha","98470 12345"\r\n"Line\nbreak ""q""",1\n'), [['Name', 'Phone'], ['Menon, Asha', '98470 12345'], ['Line\nbreak "q"', '1'], ['']])
   })
 })
