@@ -194,6 +194,7 @@ describe('disposition engine drives lifecycle (TE-1..4)', () => {
     withTenant(c, (db) => db.query('select app.apply_disposition($1,$2,$3,$4) as lc', [lead, d, note, at])).then((r) => r.rows[0].lc)
   const state = (lead: string) => one('select lifecycle, attempts, closed_reason, next_followup_at, next_followup_origin, first_touch_at, tags from leads where id = $1', [lead])
   test('first attempt -> Prospect with a system follow-up on the cadence; user-set follow-up overrides it', async () => {
+    await owner.query("update orgs set calling_start = '00:00', calling_end = '23:59:59', working_days = '{1,2,3,4,5,6,7}'")   // cadence maths without the calling-hours clamp
     assert.equal(await apply(A1, leadA, await disposition('Not reachable')), 'PROSPECT')
     let s = await state(leadA)
     assert.equal(s.attempts, 1); assert.equal(s.next_followup_origin, 'system'); assert.ok(s.first_touch_at)
