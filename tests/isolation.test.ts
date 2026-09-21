@@ -23,7 +23,7 @@ let centreA: string, centreB: string, userA: string
 
 before(async () => {
   await owner.connect()
-  await seed(owner)
+  if (!(await owner.query('select 1 from orgs')).rowCount) await seed(owner)
   centreA = await ownerId("select id from centres where code = 'EKM-07'")
   centreB = await ownerId("select id from centres where code = 'KKD-03'")
   userA = await ownerId("select id from users where centre_id = $1 and username = 'counsellor1'", [centreA])

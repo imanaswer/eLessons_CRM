@@ -15,6 +15,7 @@ export async function seed(db: pg.Client) {
   await db.query('begin')
   const { rows: [org] } = await db.query("insert into orgs (name) values ('G-TEC eLessons') returning id")
   await db.query('select app.seed_default_role_permissions($1)', [org.id])
+  await db.query('select app.seed_default_dispositions($1)', [org.id])
   const user = (username: string, display: string, role: string, district: string | null, centre: string | null) =>
     db.query(
       `insert into users (org_id, district_id, centre_id, username, display_name, role, password_hash, must_change_password)
@@ -29,8 +30,8 @@ export async function seed(db: pg.Client) {
       const ccode = `${code}-${String(i).padStart(2, '0')}`
       const tz = code === 'DXB' ? 'Asia/Dubai' : 'Asia/Kolkata'
       const { rows: [c] } = await db.query(
-        'insert into centres (org_id, district_id, code, name, timezone) values ($1,$2,$3,$4,$5) returning id',
-        [org.id, d.id, ccode, `G-TEC ${dname} ${i}`, tz])
+        'insert into centres (org_id, district_id, code, name, timezone, default_country) values ($1,$2,$3,$4,$5,$6) returning id',
+        [org.id, d.id, ccode, `G-TEC ${dname} ${i}`, tz, code === 'DXB' ? 'AE' : 'IN'])
       await user('admin', `${ccode} Centre Admin`, 'CENTRE_ADMIN', d.id, c.id)
       await user('counsellor1', `${ccode} Counsellor 1`, 'COUNSELLOR', d.id, c.id)
       await user('counsellor2', `${ccode} Counsellor 2`, 'COUNSELLOR', d.id, c.id)
