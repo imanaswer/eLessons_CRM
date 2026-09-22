@@ -17,6 +17,7 @@ export async function seed(db: pg.Client, opts: { leads?: boolean } = {}) {
   const { rows: [org] } = await db.query("insert into orgs (name) values ('G-TEC eLessons') returning id")
   await db.query('select app.seed_default_role_permissions($1)', [org.id])
   await db.query('select app.seed_default_dispositions($1)', [org.id])
+  await db.query('select app.seed_default_deal_stages($1)', [org.id])
   const user = (username: string, display: string, role: string, district: string | null, centre: string | null) =>
     db.query(
       `insert into users (org_id, district_id, centre_id, username, display_name, role, password_hash, must_change_password)
