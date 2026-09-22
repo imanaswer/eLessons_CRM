@@ -253,7 +253,11 @@ export async function syncSpend(pool: pg.Pool, deps: Deps): Promise<number> {
       const data = await fetchSpend(deps.fetch, c.config.ad_account_id, token, since, until)
       await pool.query('select app.upsert_spend($1, $2)', [c.id, JSON.stringify(data)])
       await pool.query("update connections set config = config || jsonb_build_object('spend_synced_at', now()) where id = $1", [c.id])
-    } catch (err) { await pool.query('select app.connection_result($1, $2)', [c.id, String(err)]); log('warn', 'spend sync failed', { connection_id: c.id, error: String(err) }) }
+    } catch (err) {
+      // Stamp the attempt on failure too, or a broken connection is retried every minute instead of every 6 hours.
+      await pool.query("update connections set config = config || jsonb_build_object('spend_synced_at', now()) where id = $1", [c.id])
+      await pool.query('select app.connection_result($1, $2)', [c.id, String(err)]); log('warn', 'spend sync failed', { connection_id: c.id, error: String(err) })
+    }
   }
   return rows.length
 }

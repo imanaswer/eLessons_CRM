@@ -6,10 +6,10 @@ import { encrypt, hmacHex, sha256 } from '../src/lib/crypto.ts'
 import { pool, withTenant, type Claims } from '../src/lib/db.ts'
 import { capiPayload, mapLeadFields } from '../src/lib/meta.ts'
 import { parseWebhook } from '../src/lib/whatsapp.ts'
-import { minutely, processConversions, processDeliveries, processEvents, processMessages, refreshDynamicLists, tick, type Deps } from '../worker/index.ts'
+import { minutely, processConversions, processDeliveries, processEvents, processMessages, refreshDynamicLists, syncSpend, tick, type Deps } from '../worker/index.ts'
 import { addLead, as, denied, disposition, ensureSeed, noFetch, one, owner, workerPool } from './helpers.ts'
 
-process.env.ENCRYPTION_KEY ??= Buffer.alloc(32, 7).toString('base64')
+process.env.ENCRYPTION_KEY ||= Buffer.alloc(32, 7).toString('base64')
 let A: Claims, A1: Claims, B: Claims, HQ: Claims, SA: Claims, centreA: string, centreB: string, orgId: string
 const calls: { url: string; body?: unknown }[] = []
 const meta: Record<string, unknown> = {}
@@ -82,6 +82,17 @@ describe('Meta per centre (MT-1..4)', () => {
   })
   test('field mapping helper: standard questions map by default, custom ones per form', () => {
     assert.deepEqual(mapLeadFields([{ name: 'phone_number', values: ['1'] }, { name: 'which_class_is_your_child_in?', values: ['9'] }], { 'which_class_is_your_child_in?': 'grade' }), { phone: '1', grade: '9' })
+  })
+  test('spend sync stores insights and stamps the attempt, so a broken connection is not retried every minute', async () => {
+    await owner.query(`update connections set status = 'connected', config = config || '{"ad_account_id":"9001"}' where id = $1`, [conn])
+    meta['/insights'] = { data: [{ date_start: '2026-09-20', campaign_id: 'CMP9', campaign_name: 'Admissions 2027', ad_id: 'AD9', ad_name: 'Video ad', spend: '850.5', impressions: '4000', clicks: '120', account_currency: 'INR' }] }
+    assert.equal(await syncSpend(workerPool, deps), 1)
+    assert.equal((await one('select count(*)::int n from campaign_spend where connection_id = $1', [conn])).n, 1)
+    assert.equal(await syncSpend(workerPool, deps), 0)                                    // stamped: not due again for 6 hours
+    await owner.query(`update connections set config = config - 'spend_synced_at' where id = $1`, [conn])
+    delete meta['/insights']                                                              // now the Graph call fails
+    assert.equal(await syncSpend(workerPool, deps), 1)
+    assert.equal(await syncSpend(workerPool, deps), 0)                                    // failures are stamped too
   })
 })
 
