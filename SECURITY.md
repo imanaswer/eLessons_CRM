@@ -39,14 +39,23 @@ Role scope (`app.can_see`) × permission (`app.has_perm`). Centre Admins can cre
 ## Audit
 `audit_log` rejects UPDATE/DELETE/TRUNCATE by trigger, even from the owner. Actor and scope are taken from claims, never from arguments. Logged now: login, failed login, logout, user create/disable/role change, password change/reset, district/centre create/edit, centre deactivation, permission changes, impersonation start/end. Retention target 2 years (PRD s14) — no purge job exists, so nothing is removed.
 
+## Phases 3-6
+- **2FA**: TOTP (RFC 6238) required for roles in `orgs.require_2fa_roles`; enforced by `requireClaims()` before any page or tenant query; secret AES-256-GCM encrypted; verified once per session.
+- **Secrets at rest**: `ENCRYPTION_KEY` (AES-256-GCM, versioned `v1.` blobs). Page tokens, WhatsApp tokens, gateway and webhook secrets. `secret_enc` has no SELECT grant for any tenant role; only `app.connection_secret()` (scope-checked) and the worker read it.
+- **Webhooks**: Meta/WhatsApp `X-Hub-Signature-256` over the raw body with the app secret; payment `X-Signature` HMAC with the per-connection secret; site/API bearer keys stored as SHA-256. Unsigned → 401 before anything is stored. 1 MB body limit. Handlers call one definer function and return.
+- **Unmapped pages**: a validly signed event for a page no centre has connected is kept as dead-letter with `MAPPING_PENDING`, never dropped, replayable by HQ.
+- **Outbound**: webhooks are https only, signed with `x-elessons-signature`, 10 s timeout, 6 retries then dead. The worker never executes payload content.
+- **Conversions API** sends only the parent's SHA-256 phone/email; no student field leaves the system (PRD s14 minors).
+- **WhatsApp**: DNC, opt-out (`STOP`) and withdrawn consent are checked in `app.queue_message` before any message is queued, for users, automation and broadcasts alike.
+- **Automation**: rules are rows scoped org/district/centre; centres cannot edit or disable HQ rules (policy). Actions run inside the worker under `security definer` with no user input reaching SQL.
+- **Merge** is restricted to the same centre and to HQ Admin / Centre Admin with `leads.merge`.
+
 ## Not yet implemented — must not be claimed
 | Item | PRD | Note |
 |---|---|---|
-| 2FA (TOTP) for Superadmin/HQ Admin | TEN-9, P1 | columns reserved; **required before production HQ use** |
-| Per-IP login rate limiting | s5 | per-account lockout exists; add at the edge/WAF |
+| Per-IP rate limiting (login and webhooks) | s5 | per-account lockout exists; add at the edge/WAF |
+| Live verification of Meta / WhatsApp / gateway signatures | s5 | verified against the documented formats and self-generated signatures only |
 | Device/session list UI | s14 | data is in `sessions` |
-| Token encryption (`ENCRYPTION_KEY`) | s13 | arrives with `connections` in Phase 3 |
 | Block bulk select-all | TEN-8 | hides the select-all checkbox only; bulk functions still accept many ids |
-| Webhook signature validation | s5 | no public webhook endpoint exists yet (Phase 3) |
 | DPDP / UAE legal review, consent, erasure | s14 | launch blocker, not an engineering task alone |
 | Backups, PITR, restore test | s46 | nothing configured or verified |
