@@ -1,9 +1,9 @@
 # eLessons CRM
 
-Multi-tenant CRM for G-TEC eLessons, replacing Salesmax. Spec: `eLessons CRM Product Requirements Document.pdf`.
+Multi-tenant CRM for G-TEC eLessons, replacing Salesmax. Spec: [docs/PRD.pdf](docs/PRD.pdf).
 One Next.js app + one Postgres database (+ one worker from Phase 1). Centre isolation is enforced by Postgres RLS.
 
-**Status: all six phases built and tested locally (89 tests). Nothing is deployed and nothing has been run against live Meta, WhatsApp or a payment gateway.** What G-TEC must supply is in [NEEDED.md](NEEDED.md); the itemised status is in [ROADMAP.md](ROADMAP.md).
+**Status: all six phases built and tested locally (89 tests). Nothing is deployed and nothing has been run against live Meta, WhatsApp or a payment gateway.** What G-TEC must supply is in [NEEDED.md](docs/NEEDED.md); the itemised status is in [ROADMAP.md](docs/ROADMAP.md).
 
 ## Local setup
 Needs Node >= 23.6, pnpm, PostgreSQL 15+ running locally.
@@ -48,7 +48,7 @@ Every seeded account uses the same password: **`dev-only-password-1`** (change w
 
 `EKM-07` is set to round-robin new leads between its two counsellors; every other centre sends new leads to its Centre Admin.
 
-Docs: [NEEDED](NEEDED.md) · [ARCHITECTURE](ARCHITECTURE.md) · [DATABASE](DATABASE.md) · [SECURITY](SECURITY.md) · [TESTING](TESTING.md) · [DEPLOYMENT](DEPLOYMENT.md) · [INTEGRATIONS](INTEGRATIONS.md) · [MIGRATION](MIGRATION.md) · [ROADMAP](ROADMAP.md)
+Docs: [NEEDED](docs/NEEDED.md) · [ARCHITECTURE](docs/ARCHITECTURE.md) · [DATABASE](docs/DATABASE.md) · [SECURITY](docs/SECURITY.md) · [TESTING](docs/TESTING.md) · [DEPLOYMENT](docs/DEPLOYMENT.md) · [INTEGRATIONS](docs/INTEGRATIONS.md) · [MIGRATION](docs/MIGRATION.md) · [ROADMAP](docs/ROADMAP.md)
 
 ## Webhook endpoints
 | Endpoint | Auth | Purpose |
