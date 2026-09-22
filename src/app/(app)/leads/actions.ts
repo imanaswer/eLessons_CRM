@@ -109,7 +109,7 @@ export async function eraseAction(_: FormState, form: FormData): Promise<FormSta
   return r
 }
 
-const bulk = z.object({ op: z.enum(['assign', 'transfer', 'tag', 'list', 'export']), owner: z.string().optional(), centre: z.string().optional(), reason: z.string().optional(), tag: z.string().optional(), list: z.string().optional(), filters: z.string().optional() })
+const bulk = z.object({ op: z.enum(['assign', 'transfer', 'tag', 'list', 'export', 'pull_back']), owner: z.string().optional(), centre: z.string().optional(), reason: z.string().optional(), tag: z.string().optional(), list: z.string().optional(), filters: z.string().optional() })
 export async function bulkAction(_: FormState, form: FormData): Promise<FormState> {
   const ids = z.array(z.uuid()).max(5000).safeParse(form.getAll('ids'))
   const p = bulk.safeParse(fields(form))
@@ -125,6 +125,7 @@ export async function bulkAction(_: FormState, form: FormData): Promise<FormStat
           const s = r.rows[0]!.r.skipped_duplicate_in_target.length
           return { ok: `${r.rows[0]!.r.transferred} transferred.${s ? ` ${s} skipped: the target centre already has a lead for that parent.` : ''}` }
         }
+        case 'pull_back': { const r = await db.query<{ n: number }>('select app.pull_back_leads($1,$2) as n', [ids.data, d.reason ?? '']); return { ok: `${r.rows[0]!.n} lead(s) pulled back to the HQ pool.` } }
         case 'tag': { const r = await db.query<{ n: number }>('select app.tag_leads($1,$2) as n', [ids.data, d.tag ?? '']); return { ok: `Tag added to ${r.rows[0]!.n} lead(s).` } }
         case 'list': { const r = await db.query<{ n: number }>('select app.add_to_list($1,$2) as n', [ids.data, z.uuid().parse(d.list)]); return { ok: `${r.rows[0]!.n} added to the list.` } }
         case 'export': {

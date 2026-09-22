@@ -13,7 +13,7 @@ const ADAPTERS: Record<string, (b: Record<string, any>) => Record<string, unknow
 export async function POST(req: Request) {
   const raw = await readRaw(req); if (raw === null) return ok({ error: 'too large' }, 413)
   const gateway = new URL(req.url).searchParams.get('gateway') ?? 'generic'
-  const { rows: [conn] } = await pool.query("select id, external_id, secret_enc from connections where kind = 'payment' and status <> 'disabled' and coalesce(config->>'gateway', 'generic') = $1 limit 1", [gateway])
+  const { rows: [conn] } = await pool.query('select * from app.payment_connection($1)', [gateway])
   if (!conn?.secret_enc) return ok({ error: 'no payment connection configured' }, 503)
   const sig = req.headers.get('x-signature') ?? req.headers.get('x-razorpay-signature') ?? req.headers.get('stripe-signature') ?? ''
   if (!safeEqual(sig.replace(/^sha256=/, ''), hmacHex(decrypt(conn.secret_enc), raw))) return ok({ error: 'bad signature' }, 401)

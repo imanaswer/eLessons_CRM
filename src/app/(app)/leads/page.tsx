@@ -3,6 +3,7 @@ import { LocalTime, SelectAll } from '@/components/client.tsx'
 import { buildLeadQuery, leadFilterSchema, SMART_VIEWS, type SmartView } from '@/lib/leads-query.ts'
 import { perms, tenant } from '@/lib/session.ts'
 import { BulkBar } from './bulk.tsx'
+import { SaveViewBar } from './saveview.tsx'
 import { LeadDrawer } from './drawer.tsx'
 
 const PAGE = 50
@@ -25,9 +26,10 @@ export default async function Leads({ searchParams }: { searchParams: Promise<Re
        where u.is_active and ($1::uuid is null or u.centre_id = $1) order by c.code nulls first, u.display_name limit 300`, [filters.centre ?? c.centre_id])
     const lists = await db.query<{ id: string; name: string }>("select id, name from lists where kind = 'static' order by created_at desc limit 100")
     const labels = await db.query<{ name: string }>('select distinct source_l1 as name from lead_list where source_l1 is not null limit 50')
+    const saved = (await db.query<{ id: string; name: string; filters: object; shared_centre_id: string | null }>('select id, name, filters, shared_centre_id from saved_views order by name limit 30')).rows
     const p = await perms(db, ['leads.assign', 'leads.transfer', 'leads.export', 'leads.bulk_select', 'leads.view_phone', 'leads.create', 'leads.import'] as const)
-    return { rows: rows.rows, centres: centres?.rows ?? [], owners: owners.rows, lists: lists.rows, sources: labels.rows, claims: c, wide,
-      perms: { assign: p['leads.assign'], transfer: p['leads.transfer'] && c.role !== 'CENTRE_ADMIN', exp: p['leads.export'], bulkSelect: p['leads.bulk_select'], viewPhone: p['leads.view_phone'], create: p['leads.create'], imp: p['leads.import'] } }
+    return { saved, rows: rows.rows, centres: centres?.rows ?? [], owners: owners.rows, lists: lists.rows, sources: labels.rows, claims: c, wide,
+      perms: { assign: p['leads.assign'], transfer: p['leads.transfer'] && c.role !== 'CENTRE_ADMIN', pullBack: p['leads.transfer'] && (c.role === 'HQ_ADMIN' || c.role === 'SUPERADMIN'), exp: p['leads.export'], bulkSelect: p['leads.bulk_select'], viewPhone: p['leads.view_phone'], create: p['leads.create'], imp: p['leads.import'] } }
   })
   const rows = data.rows.slice(0, PAGE), next = data.rows.length > PAGE ? rows.at(-1)!.cursor : null
   const qs = (over: Record<string, string | undefined>) => {
@@ -43,6 +45,7 @@ export default async function Leads({ searchParams }: { searchParams: Promise<Re
         {data.perms.imp && !ro && <Link href="/leads/import" className="btn btn-quiet">Import</Link>}
         {data.perms.create && !ro && <Link href="/leads/new" className="btn btn-primary">New lead</Link>}
       </div>
+      {data.saved.length > 0 && <nav aria-label="Saved views" className="flex flex-wrap gap-1 text-sm">{data.saved.map((v) => <Link key={v.id} href={`/leads?${new URLSearchParams(v.filters as Record<string, string>)}`} className="rounded-full border border-line bg-surface px-3 py-1 text-muted hover:text-ink">★ {v.name}{v.shared_centre_id ? '' : ' (private)'}</Link>)}</nav>}
       <nav aria-label="Smart views" className="-mx-4 flex gap-1 overflow-x-auto px-4">
         {(Object.keys(SMART_VIEWS) as SmartView[]).map((v) => (
           <Link key={v} href={qs({ view: v })} aria-current={filters.view === v ? 'page' : undefined}
@@ -58,6 +61,7 @@ export default async function Leads({ searchParams }: { searchParams: Promise<Re
         <input type="date" name="from" defaultValue={filters.from ?? ''} className="input" aria-label="Created from" />
         <div className="flex gap-2"><button className="btn btn-quiet flex-1">Filter</button><Link href={`/leads?view=${filters.view}`} className="btn btn-quiet">Reset</Link></div>
       </form>
+      <SaveViewBar filters={filters} centreId={data.claims.centre_id} readOnly={ro} />
 
       <BulkBar perms={data.perms} readOnly={ro} owners={data.owners} centres={data.centres} lists={data.lists} filters={JSON.stringify(filters)}>
         <div className="panel overflow-x-auto">

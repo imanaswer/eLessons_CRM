@@ -68,6 +68,25 @@ async function seedLeads(db: pg.Client, orgId: string) {
       for (const d of script[n % script.length]!) await db.query('select app.apply_disposition($1,$2,$3)', [r.r.lead_id, disp[d], d === 'Not interested' ? 'Chose a local tutor' : null])
     }
   }
+  // Phase 2-6 samples: catalogue, a Meta connection (fake token), campaign spend, a payment, a WhatsApp conversation, an automation rule, a payout rule
+  const { rows: [item] } = await db.query("insert into catalogue_items (org_id, name, grade, plan) values ($1, 'Grade 10 · All subjects', 10, 'all_subjects') returning id", [orgId])
+  await db.query("insert into prices (item_id, currency, region, amount) values ($1, 'INR', '', 12000), ($1, 'AED', '', 600)", [item.id])
+  await db.query("insert into catalogue_items (org_id, name, grade, plan, stream) values ($1, 'Grade 12 · PCMB', 12, 'all_subjects', 'PCMB')", [orgId])
+  const { rows: [ekm] } = await db.query("select id, district_id from centres where code = 'EKM-07'")
+  const { rows: [conn] } = await db.query(`insert into connections (org_id, district_id, centre_id, kind, name, status, external_id, secret_enc, token_expires_at, config, last_event_at, last_success_at, created_by)
+    values ($1, $2, $3, 'meta_page', 'G-TEC Ernakulam 7 (sample)', 'connected', 'SAMPLE_PAGE_1', 'v1.sample.sample.sample', now() + interval '50 days', '{"pixel_id":"SAMPLE_PIXEL","ad_account_id":"123"}', now() - interval '2 hours', now() - interval '2 hours', $4) returning id`, [orgId, ekm.district_id, ekm.id, hq.id])
+  await db.query("insert into connection_forms (connection_id, form_id, name, status) values ($1, 'SAMPLE_FORM', 'CBSE Grade 10 form', 'ACTIVE')", [conn.id])
+  for (let i = 0; i < 14; i++) await db.query("insert into campaign_spend (org_id, district_id, centre_id, connection_id, day, campaign_id, campaign_name, ad_id, ad_name, spend, currency, impressions, clicks) values ($1,$2,$3,$4, current_date - $5::int, 'CMP-SAMPLE', 'Admissions 2027', 'AD-1', 'Video ad', 850 + $5::int * 10, 'INR', 4000, 120)", [orgId, ekm.district_id, ekm.id, conn.id, i])
+  await db.query("update leads set campaign_id = 'CMP-SAMPLE', page_id = 'SAMPLE_PAGE_1' where source_l1 = 'Meta' and current_centre_id = $1", [ekm.id])
+  await db.query("insert into distribution_rules (org_id, name, priority, conditions, method, target_centre_ids, created_by) select $1, 'Dubai enquiries', 10, '[{\"field\":\"country\",\"op\":\"eq\",\"value\":\"AE\"}]', 'round_robin_centres', array_agg(id), $2 from centres where code like 'DXB-%'", [orgId, hq.id])
+  await db.query("insert into payout_rules (org_id, kind, rate, created_by) values ($1, 'percent', 10, $2)", [orgId, hq.id])
+  await db.query("insert into templates (org_id, name, body, status, external_id, created_by) values ($1, 'welcome', 'Hello {{1}}, welcome to eLessons. Your counsellor at {{2}} will call you shortly.', 'approved', 'SAMPLE_T1', $2)", [orgId, hq.id])
+  await db.query("insert into automation_rules (org_id, name, trigger, conditions, actions, created_by) values ($1, 'Demo link on Demo requested', 'call_outcome', '[{\"field\":\"disposition\",\"op\":\"eq\",\"value\":\"Demo requested\"}]', '[{\"type\":\"create_task\",\"title\":\"Send demo link\",\"task_type\":\"send_demo\",\"due_in_minutes\":30}]', $2)", [orgId, hq.id])
+  const { rows: [enrolled] } = await db.query("select id, primary_phone from leads where lifecycle = 'ENROLLED' and current_centre_id = $1 limit 1", [ekm.id])
+  if (enrolled) {
+    const { rows: [e] } = await db.query("select app.receive_event('payment', $1, 'seed:pay:1', $2) as id", [ekm.id, JSON.stringify({ status: 'received', amount: 12000, currency: 'INR', payment_id: 'SEED-P1', phone: enrolled.primary_phone })])
+    await db.query("update inbound_events set channel = 'payment' where id = $1", [e.id])
+  }
   await db.query("select set_config('request.jwt.claims', '', false)")
 }
 

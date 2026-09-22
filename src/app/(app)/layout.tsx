@@ -1,76 +1,60 @@
 import Link from 'next/link'
-import { redirect } from 'next/navigation'
 import { perms, requireClaims, tenant } from '@/lib/session.ts'
 import { impersonateAction, logoutAction } from './actions.ts'
+import { NAV } from './nav.ts'
+import { Pwa } from '@/components/pwa.tsx'
 
-const ROLE_LABEL: Record<string, string> = {
-  SUPERADMIN: 'Superadmin', HQ_ADMIN: 'HQ Admin', HQ_COUNSELLOR: 'HQ Counsellor',
-  DISTRICT_MANAGER: 'District Manager', CENTRE_ADMIN: 'Centre Admin', COUNSELLOR: 'Counsellor',
-}
+const ROLE_LABEL: Record<string, string> = { SUPERADMIN: 'Superadmin', HQ_ADMIN: 'HQ Admin', HQ_COUNSELLOR: 'HQ Counsellor', DISTRICT_MANAGER: 'District Manager', CENTRE_ADMIN: 'Centre Admin', COUNSELLOR: 'Counsellor' }
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const claims = await requireClaims()
-  const { scope, nav } = await tenant(async (db) => {
-    const p = await perms(db, ['users.manage', 'centres.manage', 'audit.view', 'leads.export', 'conflicts.resolve', 'inbound.replay', 'dnc.manage'] as const)
-    const users = p['users.manage'], centres = p['centres.manage'], audit = p['audit.view'], exp = p['leads.export'], conflicts = p['conflicts.resolve'], replay = p['inbound.replay'], dnc = p['dnc.manage']
-    const { rows } = await db.query<{ label: string }>(
-      `select coalesce((select code || ' · ' || name from centres where id = app.centre_id()),
-                       (select code || ' · ' || name from districts where id = app.district_id()),
-                       (select name from orgs where id = app.org_id())) as label`)
-    return {
-      scope: rows[0]?.label ?? '',
-      nav: [
-        { href: '/', label: 'Dashboard', show: true },
-        { href: '/leads', label: 'Leads', show: true },
-        { href: '/exports', label: 'Exports', show: exp },
-        { href: '/admin/conflicts', label: 'Conflicts', show: conflicts },
-        { href: '/admin/inbound', label: 'Inbound events', show: replay },
-        { href: '/admin/dnc', label: 'Do Not Contact', show: dnc },
-        { href: '/admin/districts', label: 'Districts', show: centres },
-        { href: '/admin/centres', label: 'Centres', show: centres || claims.role === 'DISTRICT_MANAGER' },
-        { href: '/admin/users', label: 'Users', show: users },
-        { href: '/admin/audit', label: 'Audit log', show: audit },
-      ].filter((n) => n.show),
-    }
+  const { scope, nav, unread } = await tenant(async (db) => {
+    const keys = [...new Set(NAV.map((n) => n.perm).filter((k): k is string => !!k))]
+    const p = await perms(db, keys)
+    const { rows: [s] } = await db.query<{ label: string }>(
+      `select coalesce((select code || ' · ' || name from centres where id = app.centre_id()), (select code || ' · ' || name from districts where id = app.district_id()), (select name from orgs where id = app.org_id())) as label`)
+    const { rows: [u] } = await db.query<{ n: number }>('select count(*)::int n from notifications where read_at is null')
+    return { scope: s?.label ?? '', unread: u!.n, nav: NAV.filter((n) => (!n.perm || p[n.perm]) && (!n.roles || n.roles.includes(claims.role))) }
   })
+  const groups = [['main', ''], ['secondary', ''], ['admin', 'Admin']] as const
   return (
-    <div className="min-h-dvh">
+    <div className="min-h-dvh lg:grid lg:grid-cols-[14rem_1fr]">
       {claims.read_only && (
-        <form action={impersonateAction} className="sticky top-0 z-20 flex items-center justify-center gap-3 bg-warn px-4 py-1.5 text-sm font-medium text-white">
+        <form action={impersonateAction} className="sticky top-0 z-30 flex items-center justify-center gap-3 bg-warn px-4 py-1.5 text-sm font-medium text-white lg:col-span-2">
           <span>Viewing as {claims.impersonating_centre_code} — read-only. Every action is audited.</span>
           <button className="rounded border border-white/60 px-2 py-0.5 text-xs hover:bg-white/10">Exit</button>
         </form>
       )}
-      <header className="border-b border-line bg-surface">
-        <div className="mx-auto flex max-w-7xl items-center gap-4 px-4 py-2.5">
+      <aside className="border-b border-line bg-surface lg:sticky lg:top-0 lg:h-dvh lg:overflow-y-auto lg:border-b-0 lg:border-r">
+        <div className="flex items-center gap-3 px-4 py-3">
           <Link href="/" className="font-semibold tracking-tight">eLessons CRM</Link>
-          <span className="chip hidden text-muted sm:inline-flex">{scope}</span>
-          <div className="ml-auto flex items-center gap-3 text-sm">
-            <Link href="/account" className="hidden text-right leading-tight sm:block">
-              <span className="block font-medium">{claims.display_name}</span>
-              <span className="block text-xs text-muted">{ROLE_LABEL[claims.role]}</span>
-            </Link>
-            <form action={logoutAction}><button className="btn btn-quiet">Sign out</button></form>
-          </div>
+          <span className="chip ml-auto truncate text-muted lg:hidden">{scope}</span>
         </div>
-        <nav aria-label="Primary" className="mx-auto flex max-w-7xl gap-1 overflow-x-auto px-3">
-          {nav.map((n) => (
-            <Link key={n.href} href={n.href} className="whitespace-nowrap border-b-2 border-transparent px-2.5 py-2 text-sm text-muted hover:border-line hover:text-ink">{n.label}</Link>
-          ))}
+        <nav aria-label="Primary" className="flex gap-1 overflow-x-auto px-3 pb-2 lg:block lg:pb-4">
+          {groups.map(([g, title]) => {
+            const items = nav.filter((n) => n.group === g); if (!items.length) return null
+            return <div key={g} className="contents lg:block lg:mt-3">
+              {title && <p className="hidden px-2.5 pb-1 text-[11px] font-medium uppercase tracking-wider text-muted lg:block">{title}</p>}
+              {items.map((n) => <Link key={n.href} href={n.href} className="block whitespace-nowrap rounded-md px-2.5 py-1.5 text-sm text-muted hover:bg-canvas hover:text-ink">{n.label}</Link>)}
+            </div>
+          })}
         </nav>
-      </header>
-      <main className="mx-auto max-w-7xl px-4 py-6">
-        {claims.must_change_password && <MustChange />}
-        {children}
-      </main>
+      </aside>
+      <div className="min-w-0">
+        <header className="flex items-center gap-3 border-b border-line bg-surface px-4 py-2 text-sm">
+          <span className="chip hidden text-muted lg:inline-flex">{scope}</span>
+          <div className="ml-auto flex items-center gap-3">
+            <Pwa />
+            <Link href="/notifications" className="btn btn-quiet relative h-8" aria-label={`${unread} unread notifications`}>Alerts{unread > 0 && <span className="ml-1 rounded-full bg-brand px-1.5 text-xs text-white">{unread}</span>}</Link>
+            <Link href="/account" className="hidden text-right leading-tight sm:block"><span className="block font-medium">{claims.display_name}</span><span className="block text-xs text-muted">{ROLE_LABEL[claims.role]}</span></Link>
+            <form action={logoutAction}><button className="btn btn-quiet h-8">Sign out</button></form>
+          </div>
+        </header>
+        <main className="mx-auto max-w-7xl px-4 py-5">
+          {claims.must_change_password && <p className="mb-4 rounded-md border border-line bg-amber-50 px-3 py-2 text-sm text-warn">You are using a temporary password. <Link href="/account" className="font-medium underline">Change it now</Link>.</p>}
+          {children}
+        </main>
+      </div>
     </div>
-  )
-}
-
-function MustChange() {
-  return (
-    <p className="mb-4 rounded-md border border-line bg-amber-50 px-3 py-2 text-sm text-warn">
-      You are using a temporary password. <Link href="/account" className="font-medium underline">Change it now</Link>.
-    </p>
   )
 }

@@ -19,7 +19,9 @@
   "dependencies": {
     "libphonenumber-js": "^1.13.13",
     "next": "^16.3.5",
+    "otpauth": "^9.5.2",
     "pg": "^8.23.0",
+    "qrcode": "^1.5.4",
     "react": "^19.3.0",
     "react-dom": "^19.3.0",
     "read-excel-file": "^9.3.10",
@@ -31,6 +33,7 @@
     "@tailwindcss/postcss": "^4.3.3",
     "@types/node": "^26.6.2",
     "@types/pg": "^8.23.1",
+    "@types/qrcode": "^1.5.6",
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
     "@types/web-push": "^3.6.4",

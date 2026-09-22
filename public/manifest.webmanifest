@@ -1,2 +1,16 @@
-{ "name": "eLessons CRM", "short_name": "eLessons", "start_url": "/", "display": "standalone",
-  "background_color": "#f7f8fa", "theme_color": "#1f4fd8", "icons": [] }
+{
+  "name": "eLessons CRM",
+  "short_name": "eLessons",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f7f8fa",
+  "theme_color": "#1f4fd8",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

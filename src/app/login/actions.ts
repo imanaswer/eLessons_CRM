@@ -25,3 +25,16 @@ export async function loginAction(_: string | null, form: FormData): Promise<str
   await setSessionCookie(result.token)
   redirect('/')
 }
+
+export async function totpAction(_: string | null, form: FormData): Promise<string | null> {
+  const { getClaims, SESSION_COOKIE } = await import('@/lib/session.ts')
+  const { cookies } = await import('next/headers')
+  const { confirmSetup, markSessionVerified, verify } = await import('@/lib/totp.ts')
+  const c = await getClaims()
+  if (!c) redirect('/login')
+  const code = String(form.get('code') ?? '')
+  const ok = c.totp_enabled ? await verify(c.user_id, code, c.display_name) : await confirmSetup(c.user_id, code, c.display_name)
+  if (!ok) return "That code didn't match. Codes change every 30 seconds; try the current one."
+  await markSessionVerified((await cookies()).get(SESSION_COOKIE)!.value)
+  redirect('/')
+}

@@ -27,6 +27,7 @@ export const getClaims = cache(async (): Promise<Claims | null> =>
 export async function requireClaims(): Promise<Claims> {
   const claims = await getClaims()
   if (!claims) redirect('/login')
+  if (claims.totp_required) redirect('/login/2fa')     // TEN-9: nothing renders and no tenant query runs until 2FA is done
   return claims
 }
 

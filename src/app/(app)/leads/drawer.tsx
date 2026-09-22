@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { DrawerKeys, LocalTime } from '@/components/client.tsx'
 import { ActionForm } from '@/components/form.tsx'
 import { perms, tenant } from '@/lib/session.ts'
+import { createDealAction, customValuesAction, mergeAction, paymentLinkAction } from '../more-actions.ts'
 import { bulkAction, callOutcomeAction, completeTaskAction, contactAction, eraseAction, noteAction, repeatEnquiryAction, studentAction, taskAction } from './actions.ts'
 import { OutcomeForm } from './outcome.tsx'
 
@@ -32,10 +33,16 @@ export async function LeadDrawer({ id, closeHref, baseHref, tab, existing }: { i
     const disps = await db.query<{ id: string; name: string; sentiment: string; followup: string; note_required: boolean }>('select id, name, sentiment, followup, note_required from dispositions where is_active order by sort')
     const p = await perms(db, ['leads.delete', 'leads.view_phone', 'leads.assign', 'leads.transfer'] as const)
     const erase = p['leads.delete'], viewPhone = p['leads.view_phone']
+    const deals = (await db.query<{ id: string; name: string; stage: string; status: string; amount: string; currency: string; student: string | null; lost_reason: string | null; kind: string; last_moved_at: Date }>('select d.id, d.name, d.stage, d.status, d.amount, d.currency, d.kind, d.lost_reason, d.last_moved_at, s.name as student from deal_list d left join students s on s.id = d.student_id where d.lead_id = $1 order by d.created_at desc', [id])).rows
+    const payments = (await db.query<{ id: string; status: string; amount: string; currency: string; channel: string; created_at: Date }>('select id, status, amount, currency, channel, created_at from payments where lead_id = $1 order by created_at desc', [id])).rows
+    const convs = (await db.query<{ id: string; status: string; last_message_at: Date | null; unread: number }>('select id, status, last_message_at, unread from conversations where lead_id = $1', [id])).rows
+    const prices = (await db.query<{ id: string; label: string }>("select p.id, i.name || ' · ' || p.currency || ' ' || p.amount || case when p.region <> '' then ' (' || p.region || ')' else '' end as label from prices p join catalogue_items i on i.id = p.item_id where p.is_active and i.is_active order by i.grade, i.name")).rows
+    const props = (await db.query<{ key: string; label: string; type: string; options: string[] }>("select key, label, type, options from property_definitions where entity = 'lead' and is_active order by sort")).rows
+    const canDeals = (await perms(db, ['deals.manage'] as const))['deals.manage'], canMerge = (await perms(db, ['leads.merge'] as const))['leads.merge']
     const canAssign = p['leads.assign'], canTransfer = p['leads.transfer'] && c.role !== 'CENTRE_ADMIN'
     const owners = canAssign ? (await db.query<{ id: string; display_name: string }>('select id, display_name from users where is_active and centre_id is not distinct from $1 order by display_name', [lead.current_centre_id])).rows : []
     const centres = canTransfer ? (await db.query<{ id: string; code: string }>('select id, code from centres where is_active and id is distinct from $1 order by code', [lead.current_centre_id])).rows : []
-    return { lead, phones: phones.rows, students: students.rows, tasks: tasks.rows, acts: acts.rows, lists: lists.rows, disps: disps.rows, erase, viewPhone, ro: c.read_only, owners, centres }
+    return { lead, phones: phones.rows, students: students.rows, tasks: tasks.rows, acts: acts.rows, lists: lists.rows, disps: disps.rows, erase, viewPhone, ro: c.read_only, owners, centres, deals, payments, convs, prices, props, canDeals, canMerge }
   })
   const shell = (body: React.ReactNode) => (
     <div className="fixed inset-0 z-30 flex justify-end" role="dialog" aria-modal="true" aria-label="Lead details">
@@ -49,7 +56,7 @@ export async function LeadDrawer({ id, closeHref, baseHref, tab, existing }: { i
   const closed = l.lifecycle === 'DEAD' || l.lifecycle === 'ENROLLED'
   const editable = !d.ro && !l.anonymised_at
   const shown = d.acts.filter((a) => tab === 'activities' || ['call_outcome', 'note', 'repeat_enquiry', 'lifecycle_change'].includes(a.type))
-  const tabs = [['interactions', 'Interactions'], ['tasks', `Tasks (${d.tasks.filter((t) => t.status === 'open').length})`], ['activities', 'Activities']] as const
+  const tabs = [['interactions', 'Interactions'], ['tasks', `Tasks (${d.tasks.filter((t) => t.status === 'open').length})`], ['opportunities', `Opportunities (${d.deals.length})`], ['conversation', 'Conversation'], ['documents', 'Documents'], ['activities', 'Activities']] as const
   return shell(<>
     <header className="sticky top-0 z-10 flex items-start gap-3 border-b border-line bg-surface px-4 py-3">
       <div className="min-w-0 flex-1">
@@ -132,6 +139,13 @@ export async function LeadDrawer({ id, closeHref, baseHref, tab, existing }: { i
             <div className="grid grid-cols-2 gap-2"><input name="city" defaultValue={l.city ?? ''} className="input" placeholder="City" aria-label="City" /><input name="state" defaultValue={l.state ?? ''} className="input" placeholder="State" aria-label="State" /></div>
             <input name="language" defaultValue={l.language ?? ''} className="input" placeholder="Preferred language" aria-label="Preferred language" />
           </ActionForm></details>}
+        {d.props.length > 0 && <details className="panel p-3"><summary className="cursor-pointer font-medium">Custom properties</summary>
+          {editable ? <ActionForm action={customValuesAction} submit="Save" className="mt-2 space-y-2"><input type="hidden" name="lead_id" value={id} />
+            {d.props.map((p) => <div key={p.key}><label className="label" htmlFor={`cp-${p.key}`}>{p.label}</label>{p.type === 'option' ? <select id={`cp-${p.key}`} name={`cp:${p.key}`} defaultValue={(l.custom as Record<string, string>)[p.key] ?? ''} className="input"><option value="">—</option>{p.options.map((o) => <option key={o}>{o}</option>)}</select>
+              : <input id={`cp-${p.key}`} name={`cp:${p.key}`} type={p.type === 'number' ? 'number' : p.type === 'date' ? 'date' : p.type === 'phone' ? 'tel' : 'text'} defaultValue={(l.custom as Record<string, string>)[p.key] ?? ''} className="input" />}</div>)}</ActionForm>
+            : <dl className="mt-2 text-sm">{d.props.map((p) => <div key={p.key} className="flex gap-2"><dt className="text-muted">{p.label}</dt><dd>{(l.custom as Record<string, string>)[p.key] ?? '—'}</dd></div>)}</dl>}</details>}
+        {editable && d.canMerge && <details className="panel p-3"><summary className="cursor-pointer font-medium">Merge another lead into this one</summary>
+          <ActionForm action={mergeAction} submit="Merge" danger className="mt-2 space-y-2"><input type="hidden" name="winner_id" value={id} /><p className="text-xs text-muted">Both timelines are kept. The other lead's phones, students, tasks and deals move here. Same centre only.</p><input name="loser_id" className="input font-mono text-xs" placeholder="Other lead id (from its URL)" aria-label="Other lead id" required /></ActionForm></details>}
         {editable && d.erase && <details className="panel p-3"><summary className="cursor-pointer text-danger">Erase lead</summary>
           <ActionForm action={eraseAction} submit="Erase permanently" danger className="mt-2 space-y-2">
             <input type="hidden" name="lead_id" value={id} />
@@ -163,7 +177,24 @@ export async function LeadDrawer({ id, closeHref, baseHref, tab, existing }: { i
           {tabs.map(([k, label]) => <Link key={k} href={`${baseHref}&tab=${k}`} scroll={false} aria-current={tab === k ? 'page' : undefined}
             className={`-mb-px border-b-2 px-3 py-2 text-sm ${tab === k ? 'border-brand font-medium text-ink' : 'border-transparent text-muted hover:text-ink'}`}>{label}</Link>)}
         </nav>
-        {tab === 'tasks' ? (
+        {tab === 'opportunities' ? (
+          <div className="space-y-3">
+            {d.deals.map((x) => <div key={x.id} className="panel p-3 text-sm"><div className="flex flex-wrap items-center gap-2"><span className="font-medium">{x.name}</span><span className="chip">{x.stage}</span>{x.kind === 'renewal' && <span className="chip text-muted">renewal</span>}<span className="ml-auto tabular-nums">{x.currency} {x.amount}</span></div>
+              <p className="text-xs text-muted">{x.student ?? 'No student'} · {x.status}{x.lost_reason ? ` · ${x.lost_reason}` : ''} · <LocalTime iso={x.last_moved_at.toISOString()} /></p>
+              {editable && d.canDeals && x.status === 'open' && <div className="mt-2 flex flex-wrap gap-2"><Link href="/opportunities" className="btn btn-quiet h-8">Move stage</Link><ActionForm action={paymentLinkAction} submit="Payment link" className=""><input type="hidden" name="deal_id" value={x.id} /></ActionForm></div>}</div>)}
+            {d.payments.length > 0 && <ul className="panel divide-y divide-line text-sm">{d.payments.map((p) => <li key={p.id} className="flex items-center gap-2 p-3"><span className={`chip ${p.status === 'received' ? 'text-ok' : p.status === 'failed' ? 'text-danger' : 'text-muted'}`}>{p.status}</span><span className="tabular-nums">{p.currency} {p.amount}</span><span className="text-muted">{p.channel}</span><span className="ml-auto text-xs text-muted"><LocalTime iso={p.created_at.toISOString()} /></span></li>)}</ul>}
+            {editable && d.canDeals && !closed && <ActionForm action={createDealAction} submit="Create deal" className="panel space-y-2 p-3"><input type="hidden" name="lead_id" value={id} />
+              <select name="student_id" className="input" aria-label="Student"><option value="">Student: first on the lead</option>{d.students.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}</select>
+              <select name="price_ids" multiple className="input h-auto" aria-label="Catalogue items" size={Math.min(6, Math.max(2, d.prices.length))}>{d.prices.map((p) => <option key={p.id} value={p.id}>{p.label}</option>)}</select>
+              <input type="date" name="expected_close" className="input" aria-label="Expected close" /></ActionForm>}
+            {d.deals.length === 0 && !d.canDeals && <p className="text-sm text-muted">No deals.</p>}
+          </div>
+        ) : tab === 'conversation' ? (
+          <div className="space-y-2 text-sm">{d.convs.map((c) => <Link key={c.id} href={`/conversations?inbox=team&id=${c.id}`} className="panel block p-3 hover:bg-canvas">WhatsApp conversation · {c.status}{c.unread ? ` · ${c.unread} unread` : ''}{c.last_message_at && <> · <LocalTime iso={c.last_message_at.toISOString()} /></>}</Link>)}
+            {d.convs.length === 0 && <p className="text-muted">No WhatsApp conversation yet. {l.primary_phone && d.viewPhone && <a className="text-brand underline" href={`https://wa.me/${String(l.primary_phone).replace(/\D/g, '')}`} target="_blank" rel="noreferrer">Open in WhatsApp</a>}</p>}</div>
+        ) : tab === 'documents' ? (
+          <p className="text-sm text-muted">Documents and voice notes need object storage (STORAGE_* in NEEDED.md). Nothing is stored here yet.</p>
+        ) : tab === 'tasks' ? (
           <ul className="space-y-2">
             {d.tasks.length === 0 && <li className="text-sm text-muted">No tasks.</li>}
             {d.tasks.map((t) => (
