@@ -4,7 +4,7 @@ import pg from 'pg'
 import { normaliseLead } from '../src/lib/ingest/normalize.ts'
 import { hashPassword } from '../src/lib/password.ts'
 
-export const SEED_PASSWORD = process.env.SEED_PASSWORD ?? 'dev-only-password-1'
+export const SEED_PASSWORD = process.env.SEED_PASSWORD || 'dev-only-password-1'
 const DISTRICTS: [string, string, number][] = [
   ['EKM', 'Ernakulam', 8], ['KKD', 'Kozhikode', 4], ['TVM', 'Thiruvananthapuram', 3], ['TSR', 'Thrissur', 3], ['DXB', 'Dubai', 2],
 ]

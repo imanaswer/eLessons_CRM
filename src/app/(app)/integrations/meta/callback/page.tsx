@@ -13,7 +13,7 @@ export default async function MetaCallback({ searchParams }: { searchParams: Pro
   const saved = raw ? (JSON.parse(raw) as { state: string; connId: string }) : null
   if (!saved || !sp.state || sp.state !== saved.state) redirect('/integrations')
   if (sp.error_description || !sp.code) return <Fail msg={sp.error_description ?? 'Facebook did not return an authorisation code.'} />
-  const h = await headers(); const redirectUri = `${process.env.APP_URL ?? `${h.get('x-forwarded-proto') ?? 'http'}://${h.get('host')}`}/integrations/meta/callback`
+  const h = await headers(); const redirectUri = `${process.env.APP_URL || `${h.get('x-forwarded-proto') ?? 'http'}://${h.get('host')}`}/integrations/meta/callback`
   try {
     const tok = await exchangeCode(fetch, sp.code, redirectUri)
     const pages = await listPages(fetch, tok.access_token)
