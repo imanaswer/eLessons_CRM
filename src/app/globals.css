@@ -1,31 +1,133 @@
 @import 'tailwindcss';
 
+/* ------------------------------------------------------------------ tokens
+   One cool-tinted neutral family, one accent, a semantic state vocabulary.
+   Elevation is declared once per surface: hairline ring for resting panels,
+   a tinted diffused shadow only for things that float (drawer, menus). */
 @theme {
-  --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
-  --color-ink: #16181d;
-  --color-muted: #667085;
-  --color-line: #e6e8ec;
+  --font-sans: var(--font-geist), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+
+  --color-canvas: #f4f5f8;        /* app background */
+  --color-rail: #eef0f4;          /* sidebar: the second neutral layer */
   --color-surface: #ffffff;
-  --color-canvas: #f7f8fa;
-  --color-brand: #1f4fd8;
-  --color-brand-ink: #173ba6;
-  --color-danger: #b42318;
-  --color-ok: #067647;
-  --color-warn: #b54708;
+  --color-sunken: #f7f8fa;        /* inset areas inside a surface */
+  --color-line: #e3e6ec;
+  --color-line-strong: #cfd4dd;
+  --color-ink: #14161c;
+  --color-ink-2: #3d434f;
+  --color-muted: #6b7280;
+  --color-faint: #9aa1ae;
+
+  --color-brand: #3557d6;
+  --color-brand-ink: #2a46b3;
+  --color-brand-soft: #e8edfb;
+  --color-brand-ring: rgba(53, 87, 214, 0.28);
+
+  --color-ok: #1f7a4d;   --color-ok-soft: #e4f4ea;
+  --color-warn: #a35d0a; --color-warn-soft: #fdf1df;
+  --color-danger: #b8362f; --color-danger-soft: #fbe8e6;
+  --color-info: #3557d6; --color-info-soft: #e8edfb;
+
+  --radius-control: 8px;
+  --radius-panel: 12px;
+  --radius-float: 14px;
+
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
+
+  --shadow-float: 0 1px 2px rgba(20, 22, 28, 0.04), 0 12px 32px -8px rgba(20, 22, 28, 0.18);
+  --shadow-menu: 0 1px 2px rgba(20, 22, 28, 0.05), 0 8px 24px -6px rgba(20, 22, 28, 0.16);
 }
 
-body { background: var(--color-canvas); color: var(--color-ink); font-feature-settings: 'cv11', 'ss01'; }
-:focus-visible { outline: 2px solid var(--color-brand); outline-offset: 2px; }
+/* ------------------------------------------------------------------ base */
+html { color-scheme: light; }
+body {
+  background: var(--color-canvas);
+  color: var(--color-ink);
+  font-size: 14px;
+  line-height: 1.45;
+  font-feature-settings: 'cv11', 'ss01', 'tnum';
+  -webkit-font-smoothing: antialiased;
+}
+h1, h2, h3 { text-wrap: balance; letter-spacing: -0.015em; }
+:focus-visible { outline: 2px solid var(--color-brand); outline-offset: 2px; border-radius: 4px; }
+::selection { background: var(--color-brand-soft); }
+details > summary { list-style: none; }
+details > summary::-webkit-details-marker { display: none; }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; } }
 
+/* ------------------------------------------------------------------ components */
 @layer components {
-  .btn { @apply inline-flex h-9 items-center justify-center gap-2 rounded-md px-3.5 text-sm font-medium transition-colors disabled:opacity-50; }
-  .btn-primary { @apply bg-brand text-white hover:bg-brand-ink; }
-  .btn-quiet { @apply border border-line bg-surface text-ink hover:bg-canvas; }
-  .btn-danger { @apply border border-line bg-surface text-danger hover:bg-red-50; }
-  .input { @apply h-9 w-full rounded-md border border-line bg-surface px-3 text-sm placeholder:text-muted/70; }
-  .label { @apply mb-1 block text-xs font-medium text-muted; }
-  .panel { @apply rounded-lg border border-line bg-surface; }
-  .th { @apply px-3 py-2 text-left text-xs font-medium uppercase tracking-wide text-muted; }
-  .td { @apply px-3 py-2.5 text-sm; }
-  .chip { @apply inline-flex items-center rounded-full border border-line px-2 py-0.5 text-xs font-medium; }
+  /* controls ---------------------------------------------------------- */
+  .btn {
+    @apply inline-flex h-9 shrink-0 items-center justify-center gap-1.5 rounded-[var(--radius-control)] px-3.5 text-[13px] font-medium whitespace-nowrap select-none;
+    transition: background-color 150ms var(--ease-out), color 150ms var(--ease-out), border-color 150ms var(--ease-out), transform 120ms var(--ease-out), box-shadow 150ms var(--ease-out);
+  }
+  .btn:active { transform: scale(0.97); }
+  .btn:disabled { opacity: 0.5; pointer-events: none; }
+  .btn-primary { @apply bg-brand text-white; box-shadow: inset 0 1px 0 rgba(255,255,255,0.14), 0 1px 2px rgba(53,87,214,0.28); }
+  .btn-primary:hover { background: var(--color-brand-ink); }
+  .btn-quiet { @apply border border-line bg-surface text-ink-2; box-shadow: 0 1px 1px rgba(20,22,28,0.04); }
+  .btn-quiet:hover { @apply border-line-strong text-ink; background: var(--color-sunken); }
+  .btn-danger { @apply border border-line bg-surface text-danger; }
+  .btn-danger:hover { background: var(--color-danger-soft); border-color: rgba(184,54,47,0.3); }
+  .btn-ghost { @apply text-muted; }
+  .btn-ghost:hover { @apply text-ink; background: var(--color-sunken); }
+
+  .input {
+    @apply h-9 w-full rounded-[var(--radius-control)] border border-line bg-surface px-3 text-[13px] text-ink placeholder:text-faint;
+    box-shadow: inset 0 1px 1px rgba(20,22,28,0.03);
+    transition: border-color 150ms var(--ease-out), box-shadow 150ms var(--ease-out);
+  }
+  .input:hover { border-color: var(--color-line-strong); }
+  .input:focus { outline: none; border-color: var(--color-brand); box-shadow: 0 0 0 3px var(--color-brand-ring); }
+  .input:disabled { background: var(--color-sunken); color: var(--color-muted); }
+  select.input { @apply pr-8 appearance-none bg-no-repeat; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12' fill='none' stroke='%236b7280' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3 4.5l3 3 3-3'/%3E%3C/svg%3E"); background-position: right 10px center; }
+  .label { @apply mb-1.5 block text-[12px] font-medium text-ink-2; }
+
+  /* surfaces ---------------------------------------------------------- */
+  .panel { @apply rounded-[var(--radius-panel)] bg-surface; box-shadow: 0 0 0 1px var(--color-line), 0 1px 2px rgba(20,22,28,0.03); }
+  .panel-head { @apply flex items-center gap-2 border-b border-line px-4 py-2.5 text-[13px] font-semibold text-ink; }
+  .float { @apply rounded-[var(--radius-float)] bg-surface; box-shadow: 0 0 0 1px var(--color-line), var(--shadow-menu); }
+
+  /* data --------------------------------------------------------------- */
+  .th { @apply sticky top-0 z-[1] bg-sunken px-3 py-2 text-left text-[11px] font-semibold uppercase tracking-[0.06em] text-muted whitespace-nowrap; }
+  .td { @apply px-3 py-2.5 text-[13px] align-middle; }
+  tbody tr { transition: background-color 120ms var(--ease-out); }
+  tbody tr:hover { background: var(--color-sunken); }
+  .num { font-variant-numeric: tabular-nums; }
+
+  /* chips: tonal, with an optional status dot ------------------------ */
+  .chip { @apply inline-flex h-[22px] items-center gap-1.5 rounded-md border border-line bg-surface px-2 text-[11.5px] font-medium leading-none text-ink-2 whitespace-nowrap; }
+  .chip::before { content: ''; @apply hidden h-1.5 w-1.5 rounded-full; background: currentColor; }
+  .chip-dot::before { @apply block; }
+  .chip.text-ok, .chip-ok { @apply border-transparent bg-ok-soft text-ok; }
+  .chip.text-warn, .chip-warn { @apply border-transparent bg-warn-soft text-warn; }
+  .chip.text-danger, .chip-danger { @apply border-transparent bg-danger-soft text-danger; }
+  .chip.text-brand, .chip-brand { @apply border-transparent bg-brand-soft text-brand; }
+  .chip.text-muted { @apply border-transparent bg-sunken text-muted; }
+
+  /* segmented filter pills (smart views, tabs) ------------------------ */
+  .seg { @apply inline-flex h-8 items-center rounded-full border border-transparent px-3 text-[13px] text-muted whitespace-nowrap; transition: background-color 150ms var(--ease-out), color 150ms var(--ease-out), border-color 150ms var(--ease-out); }
+  .seg:hover { @apply text-ink; background: rgba(20,22,28,0.05); }
+  .seg[aria-current='page'], .seg-on { @apply bg-ink text-white; }
+  .seg[aria-current='page']:hover { @apply bg-ink text-white; }
+
+  /* navigation --------------------------------------------------------- */
+  .nav-item { @apply flex h-8 items-center gap-2.5 rounded-md px-2.5 text-[13px] text-ink-2; transition: background-color 120ms var(--ease-out), color 120ms var(--ease-out); }
+  .nav-item:hover { @apply text-ink; background: rgba(20,22,28,0.05); }
+  .nav-item[aria-current='page'] { @apply bg-surface font-medium text-ink; box-shadow: 0 0 0 1px var(--color-line), 0 1px 2px rgba(20,22,28,0.05); }
+  .nav-item svg { @apply h-4 w-4 shrink-0 text-faint; }
+  .nav-item[aria-current='page'] svg { @apply text-brand; }
+
+  /* avatar ------------------------------------------------------------- */
+  .avatar { @apply inline-flex shrink-0 items-center justify-center rounded-[30%] text-[11px] font-semibold uppercase; }
+
+  /* motion ------------------------------------------------------------- */
+  .drawer-in { transition: transform 280ms var(--ease-drawer), opacity 280ms var(--ease-drawer); @starting-style { transform: translateX(24px); opacity: 0; } }
+  .fade-in { transition: opacity 200ms var(--ease-out); @starting-style { opacity: 0; } }
+  .pop-in { transform-origin: top right; transition: transform 160ms var(--ease-out), opacity 160ms var(--ease-out); @starting-style { transform: scale(0.97); opacity: 0; } }
+  .skeleton { @apply rounded-md bg-sunken; background-image: linear-gradient(90deg, transparent, rgba(20,22,28,0.05), transparent); background-size: 200% 100%; animation: shimmer 1.4s ease-in-out infinite; }
+  @keyframes shimmer { from { background-position: 200% 0; } to { background-position: -200% 0; } }
 }

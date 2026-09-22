@@ -10,6 +10,6 @@ export default async function Notifications() {
       <div className="min-w-0 flex-1"><p className="font-medium">{n.title}</p>{n.body && <p className="text-muted">{n.body}</p>}<p className="text-xs text-muted"><LocalTime iso={n.created_at.toISOString()} /> · {n.kind}</p></div>
       {n.lead_id && <Link href={`/leads?view=all&lead=${n.lead_id}`} className="btn btn-quiet h-8">Open lead</Link>}
       {!n.read_at && <form action={markReadAction}><input type="hidden" name="id" value={n.id} /><button className="btn btn-quiet h-8">Read</button></form>}</li>)}
-      {rows.length === 0 && <li className="text-sm text-muted">Nothing yet.</li>}</ul>
+      {rows.length === 0 && <li className="text-[13px] text-muted">Nothing yet.</li>}</ul>
   </Page>
 }

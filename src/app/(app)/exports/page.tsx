@@ -8,7 +8,7 @@ export default async function Exports() {
        from export_jobs j join users u on u.id = j.user_id order by j.requested_at desc limit 100`)).rows }))
   return (
     <div className="space-y-5">
-      <div><h1 className="text-xl font-semibold">Exports</h1><p className="text-sm text-muted">Start an export from the Leads screen. Every export is recorded in the audit log with its filters and row count.</p></div>
+      <div><h1 className="text-[22px] font-semibold leading-tight">Exports</h1><p className="text-[13px] text-muted">Start an export from the Leads screen. Every export is recorded in the audit log with its filters and row count.</p></div>
       <section className="panel overflow-x-auto">
         <table className="w-full">
           <thead className="border-b border-line"><tr><th className="th">Requested</th><th className="th">By</th><th className="th">Filters</th><th className="th text-right">Rows</th><th className="th">Phones</th><th className="th">Status</th><th className="th" /></tr></thead>

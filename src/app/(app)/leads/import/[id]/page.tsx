@@ -26,13 +26,13 @@ export default async function ImportBatch({ params }: { params: Promise<{ id: st
       <div className="flex items-center justify-between gap-3"><h1 className="truncate text-xl font-semibold">{b.filename}</h1><Link href="/leads/import" className="btn btn-quiet">All imports</Link></div>
       {b.status === 'mapping' ? <>
         <section className="panel overflow-x-auto">
-          <p className="border-b border-line px-3 py-2 text-xs font-medium uppercase tracking-wide text-muted">Preview · first {d.sample.length} of {b.row_count} rows</p>
+          <p className="panel-head text-[11px] font-semibold uppercase tracking-[0.06em] text-muted">Preview · first {d.sample.length} of {b.row_count} rows</p>
           <table className="w-full"><thead><tr>{b.headers.map((h) => <th key={h} className="th">{h}</th>)}</tr></thead>
             <tbody className="divide-y divide-line">{d.sample.map((r, i) => <tr key={i}>{b.headers.map((h) => <td key={h} className="td whitespace-nowrap">{r[h]}</td>)}</tr>)}</tbody></table>
         </section>
         <ActionForm action={startImportAction} submit={`Validate and import ${b.row_count} rows`} className="panel space-y-3 p-4">
           <input type="hidden" name="batch_id" value={b.id} />
-          <p className="text-sm text-muted">Match your columns to lead fields. We guessed where we could.</p>
+          <p className="text-[13px] text-muted">Match your columns to lead fields. We guessed where we could.</p>
           <div className="grid gap-3 sm:grid-cols-3">
             {FIELDS.map(([key, label, guess]) => (
               <div key={key}><label className="label" htmlFor={key}>{label}</label>
@@ -46,7 +46,7 @@ export default async function ImportBatch({ params }: { params: Promise<{ id: st
           {Object.entries(OUTCOME).map(([k, label]) => <div key={k} className="px-4 py-3"><dt className="text-xs text-muted">{label}</dt><dd className="text-2xl font-semibold tabular-nums">{d.counts[k] ?? 0}</dd></div>)}
           <div className="px-4 py-3"><dt className="text-xs text-muted">{b.status === 'done' ? 'Errors' : 'Waiting'}</dt><dd className="text-2xl font-semibold tabular-nums">{b.status === 'done' ? d.counts.error ?? 0 : (d.counts.waiting ?? 0) + (d.counts.error ?? 0)}</dd></div>
         </dl>
-        {b.status === 'processing' && <p className="text-sm text-muted">Import is running in the background. <Link href={`/leads/import/${b.id}`} className="text-brand underline">Refresh</Link> to update the counts.</p>}
+        {b.status === 'processing' && <p className="text-[13px] text-muted">Import is running in the background. <Link href={`/leads/import/${b.id}`} className="text-brand underline">Refresh</Link> to update the counts.</p>}
         {(d.counts.error ?? 0) > 0 && <p role="alert" className="text-sm text-danger">Some rows were received but processing failed. They are kept and will be retried; HQ can replay them from Admin › Inbound events.</p>}
         {b.list_id && <Link href={`/leads?view=active&list=${b.list_id}`} className="btn btn-primary">View imported leads</Link>}
       </>}

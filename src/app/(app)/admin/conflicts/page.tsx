@@ -15,8 +15,8 @@ export default async function Conflicts() {
        order by (k.status = 'open') desc, k.created_at desc limit 100`)).rows }))
   return (
     <div className="space-y-5">
-      <div><h1 className="text-xl font-semibold">Cross-centre conflicts</h1>
-        <p className="text-sm text-muted">The same parent enquired at two centres. Each centre keeps its own lead and cannot see the other. Current policy: <span className="font-medium text-ink">{d.policy === 'first_touch_wins' ? 'first touch wins (credit goes to the centre that captured the parent first)' : 'HQ decides each case'}</span>.</p></div>
+      <div><h1 className="text-[22px] font-semibold leading-tight">Cross-centre conflicts</h1>
+        <p className="text-[13px] text-muted">The same parent enquired at two centres. Each centre keeps its own lead and cannot see the other. Current policy: <span className="font-medium text-ink">{d.policy === 'first_touch_wins' ? 'first touch wins (credit goes to the centre that captured the parent first)' : 'HQ decides each case'}</span>.</p></div>
       <section className="panel overflow-x-auto">
         <table className="w-full">
           <thead className="border-b border-line"><tr><th className="th">Parent</th><th className="th">First touch</th><th className="th">Second centre</th><th className="th">Status</th><th className="th" /></tr></thead>

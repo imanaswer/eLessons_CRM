@@ -11,7 +11,7 @@ export default async function Districts() {
   }))
   return (
     <div className="space-y-5">
-      <h1 className="text-xl font-semibold">Districts</h1>
+      <h1 className="text-[22px] font-semibold leading-tight">Districts</h1>
       {manage && (
         <ActionForm action={createDistrictAction} submit="Create district" className="panel grid gap-3 p-4 sm:grid-cols-[8rem_1fr_auto] sm:items-end">
           <div><label className="label" htmlFor="code">Code</label><input id="code" name="code" className="input uppercase" placeholder="EKM" required /></div>

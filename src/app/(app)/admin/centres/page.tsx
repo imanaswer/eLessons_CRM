@@ -18,7 +18,7 @@ export default async function Centres() {
   }))
   return (
     <div className="space-y-5">
-      <h1 className="text-xl font-semibold">Centres</h1>
+      <h1 className="text-[22px] font-semibold leading-tight">Centres</h1>
       {manage && (
         <ActionForm action={createCentreAction} submit="Create centre" className="panel grid gap-3 p-4 sm:grid-cols-[8rem_9rem_1fr_11rem_auto] sm:items-end">
           <div><label className="label" htmlFor="district_id">District</label>

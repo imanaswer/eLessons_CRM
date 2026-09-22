@@ -18,10 +18,10 @@ export default async function Inbound({ searchParams }: { searchParams: Promise<
   const n = (s: string) => d.counts.find((c) => c.s === s)?.n ?? 0
   return (
     <div className="space-y-5">
-      <div><h1 className="text-xl font-semibold">Inbound events</h1><p className="text-sm text-muted">Every lead from every source is stored here before it is processed. Last 30 days.</p></div>
+      <div><h1 className="text-[22px] font-semibold leading-tight">Inbound events</h1><p className="text-[13px] text-muted">Every lead from every source is stored here before it is processed. Last 30 days.</p></div>
       <nav className="flex gap-2 text-sm">
         {[['problems', `Failed ${n('failed')} · Dead-letter ${n('dead')}`], ['pending', `Waiting ${n('pending') + n('processing') + n('held')}`], ['processed', `Processed ${n('processed')}`]].map(([k, label]) =>
-          <Link key={k} href={`?status=${k}`} aria-current={status === k ? 'page' : undefined} className={`rounded-full border px-3 py-1 ${status === k ? 'border-ink bg-ink text-white' : 'border-line bg-surface text-muted'}`}>{label}</Link>)}
+          <Link key={k} href={`?status=${k}`} aria-current={status === k ? 'page' : undefined} className="seg">{label}</Link>)}
       </nav>
       <section className="panel overflow-x-auto">
         <table className="w-full">

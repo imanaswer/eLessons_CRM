@@ -17,7 +17,7 @@ export default async function Users() {
   const roles = hq ? ['COUNSELLOR', 'CENTRE_ADMIN', 'DISTRICT_MANAGER', 'HQ_COUNSELLOR', 'HQ_ADMIN'] : ['COUNSELLOR']
   return (
     <div className="space-y-5">
-      <h1 className="text-xl font-semibold">Users</h1>
+      <h1 className="text-[22px] font-semibold leading-tight">Users</h1>
       {!me.read_only && (
         <ActionForm action={createUserAction} submit="Create user" className="panel grid gap-3 p-4 sm:grid-cols-3 lg:grid-cols-6 lg:items-end">
           <div><label className="label" htmlFor="role">Role</label><select id="role" name="role" className="input">{roles.map((r) => <option key={r}>{r}</option>)}</select></div>

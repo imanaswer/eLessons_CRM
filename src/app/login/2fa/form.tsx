@@ -4,8 +4,8 @@ import { totpAction } from '../actions.ts'
 export function TotpForm({ setup }: { setup: { secret: string; qr: string } | null }) {
   const [error, action, pending] = useActionState(totpAction, null)
   return (
-    <main className="grid min-h-dvh place-items-center px-4">
-      <form action={action} className="panel w-full max-w-sm p-6">
+    <main className="grid min-h-dvh place-items-center px-4" style={{ background: 'radial-gradient(60% 50% at 50% 0%, #e8edfb 0%, #f4f5f8 70%)' }}>
+      <form action={action} className="float w-full max-w-sm p-6">
         <h1 className="text-lg font-semibold">{setup ? 'Set up two-factor authentication' : 'Two-factor authentication'}</h1>
         {setup ? <>
           <p className="mt-1 text-sm text-muted">Your role requires 2FA. Scan this in Google Authenticator, Authy or 1Password, then enter the 6-digit code.</p>

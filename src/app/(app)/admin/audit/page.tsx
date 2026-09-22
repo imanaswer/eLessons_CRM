@@ -16,7 +16,7 @@ export default async function Audit({ searchParams }: { searchParams: Promise<{ 
   return (
     <div className="space-y-5">
       <div className="flex flex-wrap items-end justify-between gap-3">
-        <h1 className="text-xl font-semibold">Audit log</h1>
+        <h1 className="text-[22px] font-semibold leading-tight">Audit log</h1>
         <form className="flex gap-2"><input name="action" defaultValue={action ?? ''} className="input w-56" placeholder="Filter by action, e.g. auth." aria-label="Filter by action" /><button className="btn btn-quiet">Filter</button></form>
       </div>
       <section className="panel overflow-x-auto">

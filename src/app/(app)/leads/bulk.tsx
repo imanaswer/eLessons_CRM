@@ -15,7 +15,7 @@ export function BulkBar({ children, perms, readOnly, owners, centres, lists, fil
     }}>
       <input type="hidden" name="filters" value={filters} />
       {!readOnly && (
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2 text-[13px]">
           <select name="op" value={op} onChange={(e) => setOp(e.target.value)} className="input w-auto" aria-label="Bulk action">
             <option value="">Bulk action…</option>
             {perms.assign && <option value="assign">Assign to</option>}

@@ -8,7 +8,7 @@ export default async function Dnc() {
     'select d.phone_e164, d.reason, d.created_at, u.display_name as by from dnc d left join users u on u.id = d.added_by order by d.created_at desc limit 200')).rows }))
   return (
     <div className="space-y-5">
-      <div><h1 className="text-xl font-semibold">Do Not Contact</h1><p className="text-sm text-muted">Numbers here are rejected at ingestion from every source, for every centre.</p></div>
+      <div><h1 className="text-[22px] font-semibold leading-tight">Do Not Contact</h1><p className="text-[13px] text-muted">Numbers here are rejected at ingestion from every source, for every centre.</p></div>
       {!d.ro && <ActionForm action={dncAddAction} submit="Add number" className="panel grid gap-3 p-4 sm:grid-cols-[14rem_1fr_auto] sm:items-end">
         <div><label className="label" htmlFor="phone">Phone</label><input id="phone" name="phone" type="tel" className="input" required /></div>
         <div><label className="label" htmlFor="reason">Reason</label><input id="reason" name="reason" className="input" placeholder="Parent asked not to be contacted" /></div>

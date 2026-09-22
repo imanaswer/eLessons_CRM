@@ -14,9 +14,9 @@ export default async function Imports() {
   }))
   return (
     <div className="space-y-5">
-      <div className="flex items-center justify-between"><h1 className="text-xl font-semibold">Import leads</h1><Link href="/leads" className="btn btn-quiet">Back to leads</Link></div>
+      <div className="flex items-center justify-between"><h1 className="text-[22px] font-semibold leading-tight">Import leads</h1><Link href="/leads" className="btn btn-quiet">Back to leads</Link></div>
       {!d.ro && <ActionForm action={uploadImportAction} submit="Upload and map columns" className="panel space-y-3 p-4">
-        <p className="text-sm text-muted">CSV or XLSX, first row as headers, up to 20,000 rows. Every row passes the same checks as a manually entered lead: duplicates, Do Not Contact and invalid numbers are reported, not imported.</p>
+        <p className="text-[13px] text-muted">CSV or XLSX, first row as headers, up to 20,000 rows. Every row passes the same checks as a manually entered lead: duplicates, Do Not Contact and invalid numbers are reported, not imported.</p>
         <div className="grid gap-3 sm:grid-cols-2">
           <div><label className="label" htmlFor="file">File</label><input id="file" name="file" type="file" accept=".csv,.xlsx" required className="block w-full text-sm" /></div>
           {d.centres.length > 0 && <div><label className="label" htmlFor="centre_id">Import into centre</label><select id="centre_id" name="centre_id" className="input" required>{d.centres.map((c) => <option key={c.id} value={c.id}>{c.code}</option>)}</select></div>}

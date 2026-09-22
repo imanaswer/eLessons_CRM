@@ -20,7 +20,7 @@ export default async function MetaCallback({ searchParams }: { searchParams: Pro
     // page tokens are held server-side in the pending connection's config (encrypted) until one is chosen
     await tenant((db) => db.query('select app.update_connection($1, $2)', [saved.connId, JSON.stringify({ config: { pages: pages.map((p) => ({ id: p.id, name: p.name, business: p.business?.id ?? null, token_enc: encrypt(p.access_token) })), user_token_expires_in: tok.expires_in ?? null } })]))
     if (!pages.length) return <Fail msg="This Facebook account manages no pages. Sign in with an account that is an admin of the centre's page." />
-    return <main className="mx-auto max-w-lg space-y-4 p-6"><h1 className="text-xl font-semibold">Choose the page for this centre</h1>
+    return <main className="mx-auto max-w-lg space-y-4 p-6"><h1 className="text-[22px] font-semibold leading-tight">Choose the page for this centre</h1>
       <form action={pickPageAction} className="panel divide-y divide-line"><input type="hidden" name="connection_id" value={saved.connId} />{pages.map((p) => <label key={p.id} className="flex cursor-pointer items-center gap-3 p-3 text-sm"><input type="radio" name="page_id" value={p.id} required /><span className="font-medium">{p.name}</span><span className="text-muted">{p.id}</span></label>)}
         <div className="p-3"><button className="btn btn-primary">Connect this page</button></div></form>
       <p className="text-xs text-muted">Next: forms sync and the leadgen webhook subscription happen automatically.</p></main>
