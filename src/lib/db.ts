@@ -14,6 +14,8 @@ export type Claims = {
   display_name: string
   must_change_password: boolean
   impersonating_centre_code?: string
+  totp_required?: boolean
+  totp_enabled?: boolean
   ip?: string
 }
 

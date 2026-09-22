@@ -33,3 +33,6 @@ export async function addLead(claims: Claims, raw: Record<string, unknown>, opts
   })
 }
 export const disposition = async (name: string) => (await one('select id from dispositions where name = $1', [name])).id as string
+
+// a fetch that must never be reached by tests that don't involve an external API
+export const noFetch = { fetch: (async (url: unknown) => { throw new Error('unexpected external call: ' + url) }) as typeof fetch }

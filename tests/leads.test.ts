@@ -6,7 +6,7 @@ import { pool, withTenant, type Claims } from '../src/lib/db.ts'
 import { buildLeadQuery } from '../src/lib/leads-query.ts'
 import { normalisePhone } from '../src/lib/ingest/normalize.ts'
 import { processEvents, processExport } from '../worker/index.ts'
-import { addLead, as, denied, disposition, ensureSeed, one, owner, workerPool } from './helpers.ts'
+import { addLead, as, denied, disposition, ensureSeed, noFetch, one, owner, workerPool } from './helpers.ts'
 
 let A: Claims, A1: Claims, A2: Claims, B: Claims, HQ: Claims, DM: Claims
 let centreA: string, centreB: string, centreA2: string, orgId: string
@@ -235,7 +235,7 @@ describe('asynchronous events: retry, dead-letter, replay, rechurn', () => {
   test('a repeat enquiry from a website event rechurns the Dead lead with history intact (LT-8, TE-7)', async () => {
     const n = (await one('select count(*)::int n from activities where lead_id = $1', [leadA])).n
     await hostileEvent({ phone: '+919847012345', source: { l1: 'Website', l2: 'elessons.net' } }, centreA, 'web-1')
-    await processEvents(workerPool)
+    await processEvents(workerPool, noFetch)
     const l = await one('select lifecycle, times_re_engaged, attempts, next_followup_at from leads where id = $1', [leadA])
     assert.deepEqual([l.lifecycle, l.times_re_engaged, l.attempts], ['ENQUIRY', 1, 0]); assert.ok(l.next_followup_at)
     assert.ok((await one('select count(*)::int n from activities where lead_id = $1', [leadA])).n > n)
@@ -243,34 +243,34 @@ describe('asynchronous events: retry, dead-letter, replay, rechurn', () => {
   })
   test('invalid phone is a recorded outcome, not a retry; a duplicate webhook is a no-op', async () => {
     const id = await hostileEvent({ phone: '12', name: 'bad' }, centreA, 'web-2'); assert.equal(await hostileEvent({ phone: '12' }, centreA, 'web-2'), id)
-    await processEvents(workerPool)
+    await processEvents(workerPool, noFetch)
     assert.deepEqual(await one('select processing_status s, outcome o, retry_count r from inbound_events where id = $1', [id]), { s: 'processed', o: 'invalid', r: 0 })
   })
   test('processing failure: backoff, then dead-letter visible to HQ only, then replay succeeds, nothing lost', async () => {
     await owner.query("create function public.boom() returns trigger language plpgsql as $$ begin raise exception 'simulated outage'; end $$; create trigger boom before insert on leads for each row execute function public.boom()")
     const id = await hostileEvent({ phone: '+919847000007', name: 'Survivor' }, centreA, 'web-3')
-    await processEvents(workerPool)
+    await processEvents(workerPool, noFetch)
     let e = await one('select * from inbound_events where id = $1', [id])
     assert.equal(e.processing_status, 'failed'); assert.equal(e.retry_count, 1); assert.match(e.error, /simulated outage/); assert.ok(e.next_retry_at > new Date())
-    assert.equal(await processEvents(workerPool), 0, 'not retried before its backoff elapses')
-    for (let i = 0; i < 5; i++) { await owner.query("update inbound_events set next_retry_at = now() where id = $1", [id]); await processEvents(workerPool) }
+    assert.equal(await processEvents(workerPool, noFetch), 0, 'not retried before its backoff elapses')
+    for (let i = 0; i < 5; i++) { await owner.query("update inbound_events set next_retry_at = now() where id = $1", [id]); await processEvents(workerPool, noFetch) }
     e = await one('select * from inbound_events where id = $1', [id]); assert.equal(e.processing_status, 'dead'); assert.equal(e.payload.name, 'Survivor')
     await withTenant(HQ, async (db) => assert.equal((await db.query("select 1 from inbound_events where id = $1 and processing_status = 'dead'", [id])).rowCount, 1))
     await withTenant(A1, async (db) => assert.equal((await db.query('select 1 from inbound_events')).rowCount, 0))
     await denied(withTenant(A, (db) => db.query('select app.replay_event($1)', [id])))
     await owner.query('drop trigger boom on leads; drop function public.boom()')       // "the fix"
-    await withTenant(HQ, (db) => db.query('select app.replay_event($1)', [id])); await processEvents(workerPool)
+    await withTenant(HQ, (db) => db.query('select app.replay_event($1)', [id])); await processEvents(workerPool, noFetch)
     e = await one('select * from inbound_events where id = $1', [id]); assert.deepEqual([e.processing_status, e.outcome], ['processed', 'created'])
     assert.equal((await one("select count(*)::int n from leads where primary_phone = '+919847000007'")).n, 1)
   })
   test('an event stuck in "processing" by a crashed worker is reclaimed', async () => {
     const id = await hostileEvent({ phone: '+919847000008' }, centreA, 'web-4')
     await owner.query("update inbound_events set processing_status = 'processing', locked_at = now() - interval '10 minutes' where id = $1", [id])
-    await processEvents(workerPool)
+    await processEvents(workerPool, noFetch)
     assert.equal((await one('select processing_status s from inbound_events where id = $1', [id])).s, 'processed')
   })
   test('HQ-scoped events land in the HQ pool, unassigned, invisible to centres', async () => {
-    await hostileEvent({ phone: '+971501234567', name: 'Gulf parent' }, null, 'web-5'); await processEvents(workerPool)
+    await hostileEvent({ phone: '+971501234567', name: 'Gulf parent' }, null, 'web-5'); await processEvents(workerPool, noFetch)
     const l = await one("select * from leads where primary_phone = '+971501234567'")
     assert.deepEqual([l.current_centre_id, l.owner_user_id, l.timezone, l.country], [null, null, 'Asia/Dubai', 'AE'])
     assert.equal((await list(A, { ids: [l.id] })).length + (await list(DM, { ids: [l.id] })).length, 0); assert.equal((await list(HQ, { view: 'unassigned', ids: [l.id] })).length, 1)
@@ -327,10 +327,10 @@ describe('bulk import (LT-6, LS-3) and erasure', () => {
     const rows = [{ Mobile: '9847000020', Parent: 'Imp One', Child: 'Kid', Class: 'Grade 9' }, { Mobile: '98470 00020', Parent: 'Imp One again' },
       { Mobile: '9847000003', Parent: 'On DNC' }, { Mobile: 'n/a', Parent: 'No phone' }, { Mobile: '9847000021', Parent: 'Imp Two' }]
     const { rows: [b] } = await withTenant(A, (db) => db.query('select app.create_import_batch($1,$2,$3,$4) as id', [centreB, 'leads.csv', ['Mobile', 'Parent', 'Child', 'Class'], JSON.stringify(rows)]))
-    assert.equal(await processEvents(workerPool), 0, 'rows are held until the mapping is confirmed')
+    assert.equal(await processEvents(workerPool, noFetch), 0, 'rows are held until the mapping is confirmed')
     const mapping = JSON.stringify({ phone: 'Mobile', name: 'Parent', student_name: 'Child', grade: 'Class' })
     await withTenant(A, (db) => db.query('select app.start_import($1,$2)', [b.id, mapping])); await withTenant(A, (db) => db.query('select app.start_import($1,$2)', [b.id, mapping]))
-    while (await processEvents(workerPool));
+    while (await processEvents(workerPool, noFetch));
     const counts = Object.fromEntries((await owner.query('select outcome, count(*)::int n from inbound_events where import_batch_id = $1 group by 1', [b.id])).rows.map((r) => [r.outcome, r.n]))
     assert.deepEqual(counts, { created: 2, duplicate: 1, dnc: 1, invalid: 1 })
     const batch = await one('select * from import_batches where id = $1', [b.id]); assert.equal(batch.status, 'done'); assert.equal(batch.centre_id, centreA, 'centre admin cannot import into another centre')

@@ -114,10 +114,10 @@ begin
     select * into c from public.centres x where x.id = v_centre and x.is_active and app.can_see(x.org_id, x.district_id, x.id);
     if c.id is null then raise exception 'CENTRE_NOT_FOUND' using errcode = 'P0002'; end if;
   end if;
-  insert into public.connections (org_id, district_id, centre_id, kind, name, secret_enc, api_key_hash, config, created_by,
-                                  status)
+  insert into public.connections (org_id, district_id, centre_id, kind, name, secret_enc, api_key_hash, config, created_by, status, external_id)
   values (app.org_id(), c.district_id, v_centre, p_kind, trim(p_name), p_secret_enc, p_api_key_hash, coalesce(p_config, '{}'), app.uid(),
-          case when p_kind = 'meta_page' then 'pending' else 'connected' end) returning id into v_id;
+          case when p_kind = 'meta_page' then 'pending' else 'connected' end,
+          case when p_kind = 'payment' then coalesce(p_config->>'gateway', 'generic') end) returning id into v_id;   -- a gateway is addressed by name
   return v_id;
 end $$;
 
