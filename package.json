@@ -10,11 +10,11 @@
     "build": "next build",
     "start": "next start",
     "typecheck": "tsc --noEmit",
-    "worker": "node worker/index.ts",
-    "db:migrate": "node scripts/migrate.ts",
-    "db:seed": "node scripts/seed.ts",
-    "db:reset:test": "node scripts/migrate.ts --reset --test",
-    "test": "node scripts/migrate.ts --reset --test && DATABASE_URL=postgres://elessons_app@localhost/elessons_test node --test --test-concurrency=1 'tests/**/*.test.ts'"
+    "worker": "node --env-file-if-exists=.env worker/index.ts",
+    "db:migrate": "node --env-file-if-exists=.env scripts/migrate.ts",
+    "db:seed": "node --env-file-if-exists=.env scripts/seed.ts",
+    "db:reset:test": "node --env-file-if-exists=.env --env-file-if-exists=.env.test scripts/migrate.ts --reset --test",
+    "test": "node --env-file-if-exists=.env --env-file-if-exists=.env.test scripts/migrate.ts --reset --test && node --env-file-if-exists=.env --env-file-if-exists=.env.test --test --test-concurrency=1 tests/*.test.ts"
   },
   "dependencies": {
     "libphonenumber-js": "^1.13.13",
