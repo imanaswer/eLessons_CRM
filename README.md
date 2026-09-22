@@ -16,14 +16,37 @@ pnpm test                       # 89 tests: isolation, ingestion, engine, integr
 pnpm dev                        # web app
 pnpm worker                     # background worker (imports, inbound events, exports) in a second terminal
 ```
-Seed logins (password = `SEED_PASSWORD`, default `dev-only-password-1`):
-| Who | Centre code | Username |
-|---|---|---|
-| Centre Admin | `EKM-07` | `admin` |
-| Counsellor | `EKM-07` | `counsellor1` |
-| District Manager | `EKM` | `manager` |
-| HQ Admin | *(blank)* | `hqadmin` |
-| Superadmin | *(blank)* | `superadmin` |
+## Test accounts (development seed only)
+
+Every seeded account uses the same password: **`dev-only-password-1`** (change with `SEED_PASSWORD` before running `pnpm db:seed`). These accounts exist only in the dev/test databases; the seed refuses to run anywhere else.
+
+**HQ** — leave the centre code blank on the sign-in page. HQ Admin and Superadmin are asked to set up 2FA on first sign-in (scan the QR with any authenticator app).
+
+| Role | Centre code | Username | Password |
+|---|---|---|---|
+| Superadmin | *(blank)* | `superadmin` | `dev-only-password-1` |
+| HQ Admin | *(blank)* | `hqadmin` | `dev-only-password-1` |
+| HQ Counsellor | *(blank)* | `hqcounsellor` | `dev-only-password-1` |
+
+**District Managers** — type the district code in the centre-code field.
+
+| District | Centre code field | Username | Password |
+|---|---|---|---|
+| Ernakulam | `EKM` | `manager` | `dev-only-password-1` |
+| Kozhikode | `KKD` | `manager` | `dev-only-password-1` |
+| Thiruvananthapuram | `TVM` | `manager` | `dev-only-password-1` |
+| Thrissur | `TSR` | `manager` | `dev-only-password-1` |
+| Dubai | `DXB` | `manager` | `dev-only-password-1` |
+
+**Centres** — every one of the 20 seeded centres has the same three accounts. Centre codes: `EKM-01`…`EKM-08`, `KKD-01`…`KKD-04`, `TVM-01`…`TVM-03`, `TSR-01`…`TSR-03`, `DXB-01`, `DXB-02`. Sample leads are seeded in `EKM-07`, `EKM-01`, `KKD-03` and `DXB-01`.
+
+| Role | Centre code | Username | Password |
+|---|---|---|---|
+| Centre Admin | e.g. `EKM-07` | `admin` | `dev-only-password-1` |
+| Counsellor 1 | e.g. `EKM-07` | `counsellor1` | `dev-only-password-1` |
+| Counsellor 2 | e.g. `EKM-07` | `counsellor2` | `dev-only-password-1` |
+
+`EKM-07` is set to round-robin new leads between its two counsellors; every other centre sends new leads to its Centre Admin.
 
 Docs: [NEEDED](NEEDED.md) · [ARCHITECTURE](ARCHITECTURE.md) · [DATABASE](DATABASE.md) · [SECURITY](SECURITY.md) · [TESTING](TESTING.md) · [DEPLOYMENT](DEPLOYMENT.md) · [INTEGRATIONS](INTEGRATIONS.md) · [MIGRATION](MIGRATION.md) · [ROADMAP](ROADMAP.md)
 
