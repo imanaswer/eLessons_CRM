@@ -1,0 +1,28 @@
+- generic [active] [ref=e1]:
+  - link "Skip to content" [ref=e2] [cursor=pointer]:
+    - /url: "#main"
+  - main [ref=e3]:
+    - generic [ref=e4]:
+      - generic [ref=e5]:
+        - generic [ref=e6]: eL
+        - generic [ref=e7]:
+          - paragraph [ref=e8]: eLessons CRM
+          - paragraph [ref=e9]: G-TEC centres and HQ
+      - generic [ref=e10]:
+        - heading "Sign in" [level=1] [ref=e11]
+        - paragraph [ref=e12]: Use your centre code, username and password.
+        - generic [ref=e13]:
+          - generic [ref=e14]:
+            - generic [ref=e15]: Centre code
+            - textbox "Centre code" [ref=e16]:
+              - /placeholder: EKM-07
+            - paragraph [ref=e17]: HQ users leave this blank. District managers use the district code.
+          - generic [ref=e18]:
+            - generic [ref=e19]: Username
+            - textbox "Username" [ref=e20]
+          - generic [ref=e21]:
+            - generic [ref=e22]: Password
+            - textbox "Password" [ref=e23]
+        - button "Sign in" [ref=e24]
+      - paragraph [ref=e25]: Private system. Every sign-in is recorded.
+  - alert [ref=e26]
