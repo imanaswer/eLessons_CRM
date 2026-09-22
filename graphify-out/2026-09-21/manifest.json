@@ -1,0 +1,212 @@
+{
+  "db/migrations/0001_roles_and_claims.sql": {
+    "mtime": 1790011422.6247163,
+    "ast_hash": "b727325eb9beeb7c6c45d9538c816fca",
+    "semantic_hash": ""
+  },
+  "db/migrations/0002_tenancy.sql": {
+    "mtime": 1790011422.6276329,
+    "ast_hash": "4d7db72e49795c843e1402afa382c015",
+    "semantic_hash": ""
+  },
+  "db/migrations/0003_audit_log.sql": {
+    "mtime": 1790011441.7709002,
+    "ast_hash": "00b7319d6575ce2675c95d2b204d0859",
+    "semantic_hash": ""
+  },
+  "db/migrations/0004_identity.sql": {
+    "mtime": 1790011524.5797632,
+    "ast_hash": "453e26d05e4bbe495fa7508f7785641b",
+    "semantic_hash": ""
+  },
+  "db/migrations/0005_auth.sql": {
+    "mtime": 1790011524.5836713,
+    "ast_hash": "242bbd381f2f1f1c52c98a6e33bc1f67",
+    "semantic_hash": ""
+  },
+  "db/migrations/0006_permission_catalogue.sql": {
+    "mtime": 1790011524.5856388,
+    "ast_hash": "13dd77ec7ed1aaa20791a3899638f3f6",
+    "semantic_hash": ""
+  },
+  "next-env.d.ts": {
+    "mtime": 1790011952.6149297,
+    "ast_hash": "8195d2c60ce847a459ae9d308d6a5724",
+    "semantic_hash": ""
+  },
+  "next.config.ts": {
+    "mtime": 1790011788.8370068,
+    "ast_hash": "7e833d8d6d86c97d7c934eae724d47b6",
+    "semantic_hash": ""
+  },
+  "package.json": {
+    "mtime": 1790011811.6999238,
+    "ast_hash": "6b06e2dcc1f8b8de4fca3900f891440b",
+    "semantic_hash": ""
+  },
+  "postcss.config.mjs": {
+    "mtime": 1790011788.8395805,
+    "ast_hash": "e22e3ff1998946943d1a8a883bb8d880",
+    "semantic_hash": ""
+  },
+  "scripts/migrate.ts": {
+    "mtime": 1790011629.9722052,
+    "ast_hash": "3362db26665ca1c6f21b1e0d4d1f608e",
+    "semantic_hash": ""
+  },
+  "scripts/seed.ts": {
+    "mtime": 1790011659.3873959,
+    "ast_hash": "80371f23d7e7e72ccc53003b4f1ffcf1",
+    "semantic_hash": ""
+  },
+  "src/app/(app)/account/page.tsx": {
+    "mtime": 1790011938.2014325,
+    "ast_hash": "c5449241f63bb9fa02d444cdb6f250d3",
+    "semantic_hash": ""
+  },
+  "src/app/(app)/actions.ts": {
+    "mtime": 1790011885.7398472,
+    "ast_hash": "47513ab0a2017f235e225b73ce044441",
+    "semantic_hash": ""
+  },
+  "src/app/(app)/admin/audit/page.tsx": {
+    "mtime": 1790011938.1987748,
+    "ast_hash": "63ebc82c87a135567632ab009dcda91b",
+    "semantic_hash": ""
+  },
+  "src/app/(app)/admin/centres/page.tsx": {
+    "mtime": 1790011938.1929672,
+    "ast_hash": "5a4ec2ba00cade0e83ddc7923d61354f",
+    "semantic_hash": ""
+  },
+  "src/app/(app)/admin/districts/page.tsx": {
+    "mtime": 1790011938.1897268,
+    "ast_hash": "c2991d7b70fbb62b606c5bf76818e376",
+    "semantic_hash": ""
+  },
+  "src/app/(app)/admin/users/page.tsx": {
+    "mtime": 1790011938.1959465,
+    "ast_hash": "23142f7cbf640f8908c097ca206a1d8f",
+    "semantic_hash": ""
+  },
+  "src/app/(app)/error.tsx": {
+    "mtime": 1790011885.7451453,
+    "ast_hash": "2298ecb69cb578ec939556f6a4d7e9b4",
+    "semantic_hash": ""
+  },
+  "src/app/(app)/layout.tsx": {
+    "mtime": 1790011885.7469342,
+    "ast_hash": "5354028331eb8875bf8242097a3b16d7",
+    "semantic_hash": ""
+  },
+  "src/app/(app)/page.tsx": {
+    "mtime": 1790011885.7486186,
+    "ast_hash": "6f03af3987a10bd5f3ff1fdec0d107bb",
+    "semantic_hash": ""
+  },
+  "src/app/layout.tsx": {
+    "mtime": 1790011848.5880063,
+    "ast_hash": "197b1c549c272694b222a2f9df1661a8",
+    "semantic_hash": ""
+  },
+  "src/app/login/actions.ts": {
+    "mtime": 1790011848.5910313,
+    "ast_hash": "c61c9e242c2039cbc198460df16267a8",
+    "semantic_hash": ""
+  },
+  "src/app/login/page.tsx": {
+    "mtime": 1790011848.5941079,
+    "ast_hash": "a3e094c84593c73ff904e1aed8f1e0f4",
+    "semantic_hash": ""
+  },
+  "src/components/form.tsx": {
+    "mtime": 1790011885.7434053,
+    "ast_hash": "babff4daf6d9d6b3a5d576e17b6b90c1",
+    "semantic_hash": ""
+  },
+  "src/lib/auth-core.ts": {
+    "mtime": 1790011681.8410633,
+    "ast_hash": "1985555427fad049e799be1b8d7cbebe",
+    "semantic_hash": ""
+  },
+  "src/lib/db.ts": {
+    "mtime": 1790011659.3849645,
+    "ast_hash": "6c9dbb5f863d8aef4a4199ef4c6f3977",
+    "semantic_hash": ""
+  },
+  "src/lib/errors.ts": {
+    "mtime": 1790011810.3929062,
+    "ast_hash": "b3fbd078d46df4054d1e97f7eeae6c75",
+    "semantic_hash": ""
+  },
+  "src/lib/password.ts": {
+    "mtime": 1790011947.8820796,
+    "ast_hash": "32aa1d516296524e6ead4fbc18361052",
+    "semantic_hash": ""
+  },
+  "src/lib/session.ts": {
+    "mtime": 1790011810.3946762,
+    "ast_hash": "09d794d5032e89b9186a2ee04fdbb77d",
+    "semantic_hash": ""
+  },
+  "tests/isolation.test.ts": {
+    "mtime": 1790011733.4403298,
+    "ast_hash": "1c8e7b439e88cdf3d9c26cc8f383f0df",
+    "semantic_hash": ""
+  },
+  "tsconfig.json": {
+    "mtime": 1790011952.614011,
+    "ast_hash": "8502c6d3d3979afb7e3a5ffd1571db2f",
+    "semantic_hash": ""
+  },
+  "ARCHITECTURE.md": {
+    "mtime": 1790012042.6374109,
+    "ast_hash": "33d194004bcbb63162c578ef00d0df52",
+    "semantic_hash": ""
+  },
+  "DATABASE.md": {
+    "mtime": 1790012089.0948372,
+    "ast_hash": "06729f3d79ad7386483871de059582c1",
+    "semantic_hash": ""
+  },
+  "DEPLOYMENT.md": {
+    "mtime": 1790012089.1020522,
+    "ast_hash": "c8a5639d9faaf6d338f160ef4d0135bd",
+    "semantic_hash": ""
+  },
+  "INTEGRATIONS.md": {
+    "mtime": 1790012089.1044602,
+    "ast_hash": "22f8051da8ba7ac4444688d4b7225f18",
+    "semantic_hash": ""
+  },
+  "MIGRATION.md": {
+    "mtime": 1790012089.106522,
+    "ast_hash": "8839db4c7eeec80f7e872f09617863d7",
+    "semantic_hash": ""
+  },
+  "README.md": {
+    "mtime": 1790012042.635434,
+    "ast_hash": "5879035f989ab8ee20eee43c7e5285c7",
+    "semantic_hash": ""
+  },
+  "ROADMAP.md": {
+    "mtime": 1790012110.6612017,
+    "ast_hash": "aef538aa35d81e0abd616a90718526da",
+    "semantic_hash": ""
+  },
+  "SECURITY.md": {
+    "mtime": 1790012089.0975256,
+    "ast_hash": "adcafbf36daedd9b141e9a8d40429357",
+    "semantic_hash": ""
+  },
+  "TESTING.md": {
+    "mtime": 1790012089.0998137,
+    "ast_hash": "8f188401777c4a03f35b0e8f4fef8f02",
+    "semantic_hash": ""
+  },
+  "eLessons CRM Product Requirements Document.pdf": {
+    "mtime": 1790010738.0297658,
+    "ast_hash": "420d6b1bb224a632e2e481b6e89ce5b6",
+    "semantic_hash": ""
+  }
+}
