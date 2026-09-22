@@ -33,7 +33,8 @@ export default async function Leads({ searchParams }: { searchParams: Promise<Re
   const rows = data.rows.slice(0, PAGE), next = data.rows.length > PAGE ? rows.at(-1)!.cursor : null
   const qs = (over: Record<string, string | undefined>) => {
     const u = new URLSearchParams()
-    for (const [k, v] of Object.entries({ ...sp, cursor: undefined, lead: undefined, existing: undefined, ...over })) if (v) u.set(k, v)
+    // tab must be cleared too: the drawer appends its own &tab=, and a second one makes searchParams an array, killing every tab after the first
+    for (const [k, v] of Object.entries({ ...sp, cursor: undefined, lead: undefined, existing: undefined, tab: undefined, ...over })) if (v) u.set(k, v)
     return `/leads?${u}`
   }
   const ro = data.claims.read_only

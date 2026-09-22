@@ -15,7 +15,7 @@ export default async function Engagements({ searchParams }: { searchParams: Prom
   const max = Math.max(1, ...d.heat.map((h) => h.n))
   return <Page title="Engagements" sub={`Last ${days} days · times shown in IST`} action={<div className="flex flex-wrap gap-1">{Object.keys(LENSES).map((k) => <Link key={k} href={`?lens=${k}&days=${days}`} aria-current={lens === k ? 'page' : undefined} className="seg">{k}</Link>)}<Link href={`?lens=${lens}&days=${days === 7 ? 30 : 7}`} className="btn btn-quiet h-8">{days === 7 ? '30 days' : '7 days'}</Link></div>}>
     <section className="panel overflow-x-auto p-3"><p className="mb-2 text-xs font-medium uppercase tracking-wide text-muted">Activity by hour</p>
-      <table className="text-[10px]"><thead><tr><th /> {Array.from({ length: 24 }, (_, h) => <th key={h} className="w-5 font-normal text-muted">{h}</th>)}</tr></thead>
+      <table className="text-[10px]"><thead><tr><th />{Array.from({ length: 24 }, (_, h) => <th key={h} className="w-5 font-normal text-muted">{h}</th>)}</tr></thead>
         <tbody>{['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((dn, i) => <tr key={dn}><td className="pr-1 text-muted">{dn}</td>{Array.from({ length: 24 }, (_, h) => { const n = d.heat.find((x) => x.dow === i + 1 && x.hr === h)?.n ?? 0
           return <td key={h} title={`${dn} ${h}:00 · ${n}`} className="h-4 w-5 border border-surface" style={{ background: n ? `rgba(31,79,216,${0.15 + 0.85 * (n / max)})` : '#f7f8fa' }} /> })}</tr>)}</tbody></table></section>
     <Table head={['When', 'Lead', 'What', 'By', 'Centre']} empty={d.rows.length ? undefined : 'No activity in this lens.'}>
